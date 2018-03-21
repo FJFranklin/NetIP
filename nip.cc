@@ -24,6 +24,7 @@
 #include <cstdio>
 
 #include <netip/ip_manager.hh>
+#include <netip/ip_serial.hh>
 
 #include "tests.hh"
 
@@ -135,16 +136,16 @@ public:
   }
 };
 
-IP_Channel ser0;
-IP_Connection con;
-
-Uino uino;
-
 int main (int /* argc */, char ** /* argv */) {
+  Uino uino;
+
   IP_Manager & IP = IP_Manager::manager ();
   
-  IP.connection_add (&con);
+  IP_SerialChannel ser0("/dev/ttyACM0");
   IP.channel_add (&ser0);
+
+  IP_Connection con;
+  IP.connection_add (&con);
 
   IP_Timer timer(&uino);  // set up a periodic callback
   timer.start (IP, 1000); // once a second
