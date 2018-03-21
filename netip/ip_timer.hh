@@ -82,6 +82,8 @@ private:
 
   void timer_checks ();
 
+  bool bStop;
+
 public:
   inline void timer_add (IP_Timer * timer) {
     chain_timers.chain_prepend (timer);
@@ -91,7 +93,9 @@ public:
     return ip_arch_millis ();
   }
 
-  IP_Clock () {
+  IP_Clock () :
+    bStop(false)
+  {
     last_timer_check = milliseconds ();
   }
 
@@ -103,8 +107,12 @@ public:
     timer_checks ();
   }
 
+  inline void stop () {
+    bStop = true;
+  }
+
   inline void run () {
-    while (true) {
+    while (!bStop) {
       tick ();
       ip_arch_usleep (1);
     }

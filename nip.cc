@@ -26,6 +26,8 @@
 #include <netip/ip_manager.hh>
 #include <netip/ip_serial.hh>
 
+#include <signal.h>
+
 #include "tests.hh"
 
 class Uino : public IP_TimerClient {
@@ -136,7 +138,13 @@ public:
   }
 };
 
+void interrupt (int /* dummy */) {
+  IP_Manager::manager().stop ();
+}
+
 int main (int /* argc */, char ** /* argv */) {
+  signal (SIGINT, interrupt);
+
   Uino uino;
 
   IP_Manager & IP = IP_Manager::manager ();
@@ -151,6 +159,8 @@ int main (int /* argc */, char ** /* argv */) {
   timer.start (IP, 1000); // once a second
 
   IP.run (); // runs forever
+
+  fprintf (stderr, "\nbye bye!\n");
 
   return 0;
 }
