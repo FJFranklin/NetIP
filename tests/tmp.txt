@@ -1,0 +1,10 @@
+15:41:36.156106 8c:0d:76:66:7c:1d > 01:00:5e:00:00:01, ethertype IPv4 (0x0800), length 46: (tos 0xc0, ttl 1, id 0, offset 0, flags [DF], proto IGMP (2), length 32, options (RA))
+    192.168.1.1 > 224.0.0.1: igmp query v2
+        0x0000:  46c0 0020 0000 4000 0102 426d c0a8 0101
+        0x0010:  e000 0001 9404 0000 1164 ee9b 0000 0000
+
+15:41:40.310170 98:9e:63:25:99:1c > 01:00:5e:00:00:fb, ethertype IPv4 (0x0800), length 46: (tos 0x0, ttl 1, id 1665, offset 0, flags [none], proto IGMP (2), length 32, options (RA))
+    192.168.1.7 > 224.0.0.251: igmp v2 report 224.0.0.251
+        0x0000:  4600 0020 0681 0000 0102 7bac c0a8 0107
+        0x0010:  e000 00fb 9404 0000 1600 0904 e000 00fb
+
