@@ -94,6 +94,10 @@ public:
    */
   bool connect (const IP_Address & remote_address, u16_t remote_port);
 
+  void update () { // opportunity for low-level management; not time-specific
+    // ...
+  }
+
 protected:
   virtual bool timeout (); // return true if the timer should be reset & retained
 };

@@ -86,10 +86,14 @@ public:
   }
 
   inline void send (IP_Buffer * buffer, bool bUrgent = false) {
-    if (bUrgent)
-      chain_out.chain_prepend (buffer);
-    else
-      chain_out.chain_append (buffer);
+    if (buffer) {
+      buffer->ref ();
+
+      if (bUrgent)
+	chain_out.chain_prepend (buffer);
+      else
+	chain_out.chain_append (buffer);
+    }
   }
 
 protected:

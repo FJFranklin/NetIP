@@ -78,11 +78,12 @@ class IP_Clock {
 private:
   Chain<IP_Timer>  chain_timers;
 
+  u32_t last_timer_second;
   u32_t last_timer_check; // very little point in checking the timers if the time hasn't changed
 
-  void timer_checks ();
-
   bool bStop;
+
+  bool timer_checks (u32_t current_time); // returns true if all timers checked; false if one was triggered & removed
 
 public:
   inline void timer_add (IP_Timer * timer) {
@@ -97,26 +98,30 @@ public:
     bStop(false)
   {
     last_timer_check = milliseconds ();
+    last_timer_second = last_timer_check;
   }
 
   virtual ~IP_Clock () {
     // ...
   }
 
+  virtual void every_millisecond () {
+    // 
+  }
+
+  virtual void every_second () {
+    // ...
+  }
+
   virtual void tick () {
-    timer_checks ();
+    // ...
   }
 
   inline void stop () {
     bStop = true;
   }
 
-  inline void run () {
-    while (!bStop) {
-      tick ();
-      ip_arch_usleep (1);
-    }
-  }
+  void run ();
 };
 
 #endif /* ! __ip_timer_hh__ */

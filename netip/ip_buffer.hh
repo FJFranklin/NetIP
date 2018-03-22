@@ -32,6 +32,9 @@ private:
 
   u16_t buffer_length;
 
+  u8_t source_channel;
+  u8_t ref_count;
+
 public:
   inline const u8_t * bytes () const {
     return (u8_t *) buffer;
@@ -53,8 +56,26 @@ public:
     }
   }
 
+  inline void ref () {
+    ++ref_count;
+  }
+
+  inline u8_t unref () {
+    return --ref_count;
+  }
+
+  inline void channel (u8_t channel_number) {
+    source_channel = channel_number;
+  }
+
+  inline u8_t channel () const {
+    return source_channel;
+  }
+
   IP_Buffer () :
-    buffer_length(0)
+    buffer_length(0),
+    source_channel(0),
+    ref_count(0)
   {
     // ...
   }

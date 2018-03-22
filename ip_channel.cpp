@@ -43,7 +43,11 @@ bool IP_Channel::slip_next_to_send (const u8_t *& byte, u8_t & flags) { // retur
     flags = IP_SLIP_SINGLE | IP_SLIP_PACKET_LAST;
     byte = &END;
 
-    IP_Manager::manager().spare (buffer_out); // don't need the buffer any more; set it free...
+    /* don't need the buffer any more; set it free...
+     */
+    if (!buffer_out->unref ()) { // ... so long as no one else is ising it
+      IP_Manager::manager().spare (buffer_out);
+    }
     buffer_out = 0;
 
     return true; // there's data to send
@@ -77,9 +81,11 @@ bool IP_Channel::slip_next_to_send (const u8_t *& byte, u8_t & flags) { // retur
 
 bool IP_Channel::slip_can_receive () {
   if (slip_read_flags == IP_SLIP_READ_COMPLETE) {
+    buffer_in->channel (channel_number); // note the buffer's originating channel
+
     if (IP_Manager::manager().queue (buffer_in)) {
       slip_read_flags = 0;
-      buffer_in->clear ();
+      buffer_in->clear (); // this is now actually a different buffer
     } else {
       return false; // oops, need to hang onto the buffer
     }

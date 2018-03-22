@@ -30,23 +30,38 @@ void IP_Timer::start (IP_Clock & clock, u32_t interval) {
   clock.timer_add (this);
 }
 
-void IP_Clock::timer_checks () {
-  u32_t time = milliseconds (); // just call this the once
-
-  if (last_timer_check == time) { // time is in milliseconds; this method may get called more often
-    return;
-  }
-
+bool IP_Clock::timer_checks (u32_t current_time) {
   Chain<IP_Timer>::iterator I = chain_timers.begin ();
 
   while (*I) {
-    if ((*I)->check (time)) {         // the timeout was called, and is no longer needed
+    if ((*I)->check (current_time)) { // the timeout was called, and is no longer needed
       chain_timers.chain_remove (*I); // we just broke the chain; it's not safe to continue...
       break;
     }
     ++I;
   }
-  if (!*I) { // finished time checks; note current time
-    last_timer_check = time;
+  return !*I;
+}
+
+void IP_Clock::run () {
+  while (!bStop) {
+    u32_t time = milliseconds ();  // just call this the once
+
+    if (last_timer_check < time) { // time is in milliseconds; timer_checks() should be called once a millisecond
+      while (!timer_checks (time));
+      last_timer_check = time;     // finished time checks; note current time
+
+      every_millisecond ();
+    }
+
+    if (time - last_timer_second > 999) {
+      last_timer_second += 1000;
+
+      every_second ();
+    }
+
+    tick ();
+
+    ip_arch_usleep (1);
   }
 }

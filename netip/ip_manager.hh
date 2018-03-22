@@ -42,9 +42,11 @@ private:
 
   IP_Header header;
 
-  u16_t last_port; // counter for generating free port numbers
+  u16_t  last_port; // counter for generating free port numbers
 
-  ns32_t tcp_iss; // TCP initial sequence number
+  ns32_t tcp_iss;   // TCP initial sequence number
+
+  u8_t   ticker;    // internal cooperative management
 
 public:
   IP_Address host;
@@ -95,8 +97,12 @@ public:
     chain_buffers_spare.chain_prepend (buffer);
   }
 
-public:
+private:
+  /* clock functions
+   */
   void tick ();
+  void every_millisecond ();
+  void every_second ();
 };
 
 #endif /* ! __ip_manager_hh__ */

@@ -36,7 +36,8 @@ IP_Manager::IP_Manager () :
   last_port(4096),
   host(IP_Address_DefaultHost),
   gateway(IP_Address_DefaultGateway),
-  netmask(IP_Address_DefaultNetmask)
+  netmask(IP_Address_DefaultNetmask),
+  ticker(0)
 {
   for (int i = 0; i < IP_Buffer_Extras; i++) {
     chain_buffers_spare.chain_prepend (buffers + i);
@@ -78,7 +79,7 @@ void IP_Manager::channel_add (IP_Channel * channel) {
     if (C) {
       channel->set_number (C->number () + 1);
     } else {
-      channel->set_number (0);
+      channel->set_number (1); // first channel is #1; reserve 0 for ourself
     }
     chain_channel.chain_prepend (channel);
   }
@@ -113,18 +114,51 @@ bool IP_Manager::queue (IP_Buffer *& buffer) {
 }
 
 void IP_Manager::tick () {
-  /* Check timers to see if any connections, etc., need updating
+  /* Update I/O channels
    */
-  IP_Clock::tick ();
+  Chain<IP_Channel>::iterator C = chain_channel.begin ();
 
-  /* Upodate I/O buffers & streams
-   */
-  Chain<IP_Channel>::iterator I = chain_channel.begin ();
-
-  while (*I) {
-    (*I)->update ();
-    ++I;
+  while (*C) {
+    (*C)->update ();
+    ++C;
   }
 
+  switch (ticker) { // try to balance processor load to allow the timers to function properly
+  case 0:
+    {
+      /* Update IP connections
+       */
+      Chain<IP_Connection>::iterator I = chain_connection.begin ();
+
+      while (*I) {
+	(*I)->update ();
+	++I;
+      }
+    }
+    ++ticker;
+    break;
+
+  case 1:
+    {
+      // TODO: Handle next pending buffer, if any
+    }
+    ++ticker;
+    break;
+
+  case 2:
+  default:
+    {
+      // TODO: Handle next pending task, if any
+    }
+    ticker = 0;
+    break;
+  }
+}
+
+void IP_Manager::every_millisecond () {
   // ...
+}
+
+void IP_Manager::every_second () {
+  // TODO: broadcast ping - i.e., set a flag to broadcast a ping as and when a spare buffer is available
 }
