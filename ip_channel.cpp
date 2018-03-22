@@ -46,7 +46,7 @@ bool IP_Channel::slip_next_to_send (const u8_t *& byte, u8_t & flags) { // retur
     /* don't need the buffer any more; set it free...
      */
     if (!buffer_out->unref ()) { // ... so long as no one else is ising it
-      IP_Manager::manager().spare (buffer_out);
+      IP_Manager::manager().add_to_spares (buffer_out);
     }
     buffer_out = 0;
 

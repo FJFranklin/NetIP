@@ -250,9 +250,6 @@ public:
   enum HeaderSniff {
     hs_Okay = 0,
     hs_EchoRequest,
-    hs_AddressOther,
-    hs_Ethernet_UnsupportedType,
-    hs_Ethernet_PacketTooShort,
     hs_IPv4,
     hs_IPv4_FrameError,
     hs_IPv4_PacketTooShort,

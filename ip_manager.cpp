@@ -113,6 +113,11 @@ bool IP_Manager::queue (IP_Buffer *& buffer) {
   return bQueued;
 }
 
+void IP_Manager::forward (IP_Buffer * buffer) {
+  // TODO
+  add_to_spares (buffer); // FIXME
+}
+
 void IP_Manager::tick () {
   /* Update I/O channels
    */
@@ -138,9 +143,55 @@ void IP_Manager::tick () {
     ++ticker;
     break;
 
-  case 1:
+  case 1: // Handle next pending buffer, if any
     {
-      // TODO: Handle next pending buffer, if any
+      IP_Buffer * pending = chain_buffers_pending.chain_pop ();
+
+      if (pending) {
+	switch (header.sniff (*pending)) {
+	case IP_Header::hs_Okay:
+	  if (header.address_destination == host) { // it's for us
+	    add_to_spares (pending); // FIXME // TODO: hand over to appropriate connection
+	  } else { // forward it
+	    forward (pending);
+	  }
+	  break;
+
+	case IP_Header::hs_EchoRequest:
+	  if (header.address_destination == host) { // it's for us
+	    add_to_spares (pending); // FIXME // TODO: add support for Echo Reply
+	  } else { // forward it
+	    if (!chain_buffers_spare.chain_first ()) { // check if there is a spare - affects priorities
+	      add_to_spares (pending);                 // drop it; more important to have spare buffers than broadcast packets (trying to avoid storms)
+	    } else {
+	      forward (pending);
+	    }
+	  }
+	  break;
+
+	case IP_Header::hs_Protocol_Unsupported:
+	  if (header.address_destination == host) { // it's for us - but we can't use it
+	    add_to_spares (pending);
+	  } else { // forward it
+	    forward (pending);
+	  }
+	  break;
+
+	  /* Unable to handle this packet; don't handle or even forward it
+	   */
+	case IP_Header::hs_IPv4:
+	case IP_Header::hs_IPv4_FrameError:
+	case IP_Header::hs_IPv4_PacketTooShort:
+	case IP_Header::hs_IPv4_Checksum:
+	case IP_Header::hs_IPv6:
+	case IP_Header::hs_IPv6_FrameError:
+	case IP_Header::hs_IPv6_PacketTooShort:
+	case IP_Header::hs_Protocol_PacketTooShort:
+	case IP_Header::hs_Protocol_Checksum:
+	  add_to_spares (pending);
+	  break;
+	}
+      }
     }
     ++ticker;
     break;

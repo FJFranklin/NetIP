@@ -93,11 +93,13 @@ public:
   /* 
    * adds a free buffer to the spares
    */
-  inline void spare (IP_Buffer * buffer) {
+  inline void add_to_spares (IP_Buffer * buffer) {
     chain_buffers_spare.chain_prepend (buffer);
   }
 
 private:
+  void forward (IP_Buffer * buffer);
+
   /* clock functions
    */
   void tick ();

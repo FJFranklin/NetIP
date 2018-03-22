@@ -57,15 +57,6 @@ public:
     case IP_Header::hs_EchoRequest:
       fputs ("hs_EchoRequest\n", stderr);
       break;
-    case IP_Header::hs_AddressOther:
-      fputs ("hs_AddressOther\n", stderr);
-      break;
-    case IP_Header::hs_Ethernet_UnsupportedType:
-      fputs ("hs_Ethernet_UnsupportedType\n", stderr);
-      break;
-    case IP_Header::hs_Ethernet_PacketTooShort:
-      fputs ("hs_Ethernet_PacketTooShort\n", stderr);
-      break;
     case IP_Header::hs_IPv4:
       fputs ("hs_IPv4\n", stderr);
       break;
@@ -108,38 +99,6 @@ public:
     } else {
       IP_Manager::manager().stop ();
     }
-    switch (++number) {
-    case 1:
-      test (test_1_info, test_1, sizeof test_1);
-      break;
-    case 2:
-      test (test_2_info, test_2, sizeof test_2);
-      break;
-    case 3:
-      test (test_3_info, test_3, sizeof test_3);
-      break;
-    case 4:
-      test (test_4_info, test_4, sizeof test_4);
-      break;
-    case 5:
-      test (test_5_info, test_5, sizeof test_5);
-      break;
-    case 6:
-      test (test_6_info, test_6, sizeof test_6);
-      break;
-    case 7:
-      test (test_7_info, test_7, sizeof test_7);
-      break;
-    case 8:
-      test (test_8_info, test_8, sizeof test_8);
-      break;
-    case 9:
-      test (test_9_info, test_9, sizeof test_9);
-      break;
-    default:
-      break;
-    }
-
     return true; // keep going
   }
 };
