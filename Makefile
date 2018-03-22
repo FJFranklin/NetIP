@@ -5,10 +5,10 @@ ALL_SOURCES=\
 	ip_connection.cpp \
 	ip_header.cpp \
 	ip_manager.cpp \
+	ip_serial.cpp \
 	ip_timer.cpp \
 	ip_types.cpp \
-	netip/unix/ip_arch.cc \
-	netip/unix/ip_arch_serial.cc
+	netip/unix/ip_arch.cc
 
 ALL_HEADERS=\
 	netip/ip_address.hh \
@@ -24,6 +24,7 @@ ALL_HEADERS=\
 	netip/ip_types.hh \
 	netip/unix/ip_arch.hh \
 	netip/unix/ip_arch_serial.hh \
+	netip/unix/ip_arch_serial.cc \
 	tests.hh
 
 nip:	nip.cc $(ALL_SOURCES) $(ALL_HEADERS)

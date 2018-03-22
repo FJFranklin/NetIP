@@ -21,14 +21,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../ip_serial.hh"
+// included from source file ip_serial.cpp
 
 #include <cstdio>
 
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-// #include <sys/types.h>
 
 IP_SerialChannel::IP_SerialChannel (const char * device_name) :
   device_fd(-1)

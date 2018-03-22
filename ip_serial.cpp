@@ -21,76 +21,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __ip_buffer_hh__
-#define __ip_buffer_hh__
+#include "netip/ip_serial.hh"
 
-#include "ip_header.hh"
-
-class IP_Buffer : public Link {
-private:
-  u8_t buffer[IP_Buffer_WordCount << 1];
-
-  u16_t buffer_length;
-
-public:
-  inline const u8_t * bytes () const {
-    return (u8_t *) buffer;
-  }
-  inline u16_t length () const {
-    return buffer_length;
-  }
-
-  inline void clear () {
-    buffer_length = 0;
-  }
-
-  inline void append (const u8_t * ptr, u16_t length) {
-    if (ptr && length) {
-      if (buffer_length + length <= (IP_Buffer_WordCount << 1)) {
-	memcpy (buffer + buffer_length, ptr, length);
-	buffer_length += length;
-      }      
-    }
-  }
-
-  IP_Buffer () :
-    buffer_length(0)
-  {
-    // ...
-  }
-
-  ~IP_Buffer () {
-    // ...
-  }
-};
-
-class IP_BufferIterator : public BufferIterator {
-public:
-  IP_BufferIterator (const IP_Buffer & B) :
-    BufferIterator(B.bytes (), B.length ())
-  {
-    // ...
-  }
-
-  ~IP_BufferIterator () {
-    // ...
-  }
-
-  inline void ns16 (ns16_t & value) {
-    value = *this;
-    ++(*this);
-    ++(*this);
-  }
-
-  inline void ns32 (ns32_t & value) {
-    value = *this;
-    *this += 4;
-  }
-
-  inline void address (IP_Address & value) {
-    value = *this;
-    *this += value.byte_length ();
-  }
-};
-
-#endif /* ! __ip_buffer_hh__ */
+#if IP_ARCH_UNIX
+#include "netip/unix/ip_arch_serial.cc"
+#endif
+#if IP_ARCH_ARDUINO
+#include "netip/arduino/ip_arch_serial.cpp"
+#endif

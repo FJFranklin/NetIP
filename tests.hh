@@ -112,3 +112,24 @@ u8_t test_9[] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x81, 0x00, 0x50, 0x2a, 0xeb, 0xee, 0x00, 0x00,
   0x5a, 0xb0, 0xd1, 0x93, 0x00, 0x05, 0x19, 0x4f
 };
+
+struct ip_packet {
+  const char * info;
+  const u8_t * data;
+
+  u16_t size;
+};
+
+struct ip_packet tests[] = {
+  { test_1_info, test_1, sizeof test_1 },
+  { test_2_info, test_2, sizeof test_2 },
+  { test_3_info, test_3, sizeof test_3 },
+  { test_4_info, test_4, sizeof test_4 },
+  { test_5_info, test_5, sizeof test_5 },
+  { test_6_info, test_6, sizeof test_6 },
+  { test_7_info, test_7, sizeof test_7 },
+  { test_8_info, test_8, sizeof test_8 },
+  { test_9_info, test_9, sizeof test_9 }
+};
+
+u8_t test_count = sizeof (tests) / sizeof (tests[0]);

@@ -41,7 +41,7 @@ public:
     // ...
   }
 
-  void test (const char * info, u8_t * buffer, u16_t length) {
+  void test (const char * info, const u8_t * buffer, u16_t length) {
     fputs ("\n", stderr);
     fputs (info, stderr);
     fputs ("\n", stderr);
@@ -102,6 +102,12 @@ public:
   virtual bool timeout () { // should be called once a second
     fprintf (stderr, "tick...\n");
 
+    if (number < test_count) {
+      test (tests[number].info, tests[number].data, tests[number].size);
+      ++number;
+    } else {
+      IP_Manager::manager().stop ();
+    }
     switch (++number) {
     case 1:
       test (test_1_info, test_1, sizeof test_1);
