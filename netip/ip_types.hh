@@ -26,6 +26,148 @@
 
 #include "ip_config.hh"
 
+class FIFO {
+private:
+  u8_t * buffer_start;
+  u8_t * buffer_end;
+  u8_t * data_start; // if start == end, then no data
+  u8_t * data_end;   // must point to a writable byte
+
+public:
+  inline bool push (u8_t byte) {
+    bool bCanPush = true;
+
+    if (data_start < data_end) {
+      if ((data_start == buffer_start) && (data_end + 1 == buffer_end)) {
+	bCanPush = false;
+      }
+    } else if (data_start > data_end) {
+      if (data_end + 1 == data_start) {
+	bCanPush = false;
+      }
+    } // else (data_start == data_end) // buffer must be empty
+
+    if (bCanPush) {
+      *data_end = byte;
+
+      if (++data_end == buffer_end) {
+	data_end = buffer_start;
+      }
+    }
+    return bCanPush;
+  }
+  inline bool pop (u8_t & byte) {
+    if (data_start == data_end) { // buffer must be empty
+      return false;
+    }
+    byte = *data_start;
+
+    if (++data_start == buffer_end) {
+      data_start = buffer_start;
+    }
+    return true;
+  }
+
+  FIFO (u8_t * byte_buffer, u16_t capacity) :
+    buffer_start(byte_buffer),
+    buffer_end(byte_buffer+capacity),
+    data_start(byte_buffer),
+    data_end(byte_buffer+1)
+  {
+    // ...
+  }
+
+  ~FIFO () {
+    // ...
+  }
+};
+
+class Buffer {
+private:
+  static u8_t fake_byte;
+
+  u8_t * buffer;
+
+  u16_t  buffer_max; // maximum length
+  u16_t  buffer_used;
+
+  u8_t   ref_count;
+
+public:
+  inline const u8_t * bytes () const {
+    return buffer;
+  }
+  inline u16_t length () const {
+    return buffer_used;
+  }
+  inline u16_t available () const {
+    return buffer_max - buffer_used;
+  }
+
+  inline u8_t & operator[] (u16_t index) {
+    if (index < buffer_max) {
+      if (buffer_used <= index) {
+	buffer_used = index + 1;
+      }
+      return buffer[index < buffer_max];
+    } else { // bad indexing!
+      return fake_byte;
+    }
+  }
+
+  inline void clear () {
+    buffer_used = 0;
+  }
+
+  inline void ref () {
+    ++ref_count;
+  }
+  inline u8_t unref () {
+    return --ref_count;
+  }
+
+  Buffer (u8_t * byte_buffer, u16_t capacity) :
+    buffer(byte_buffer),
+    buffer_max(capacity),
+    buffer_used(0),
+    ref_count(0)
+  {
+    // ...
+  }
+
+  virtual ~Buffer () {
+    // ...
+  }
+
+  inline void append (const u8_t * ptr, u16_t length) {
+    if (ptr && length) {
+      if (buffer_used + length <= buffer_max) {
+	memcpy (buffer + buffer_used, ptr, length);
+	buffer_used += length;
+      }      
+    }
+  }
+
+  inline void write (u16_t offset, const u8_t * ptr, u16_t length) {
+    if (ptr && length) {
+      if (offset + length <= buffer_max) {
+	memcpy (buffer + offset, ptr, length);
+	if (buffer_used < offset + length) {
+	  buffer_used = offset + length;
+	}
+      }      
+    }
+  }
+
+  inline void read (u16_t offset, u8_t * ptr, u16_t length) const {
+    if (ptr && length) {
+      if (offset + length <= buffer_used) {
+	memcpy (ptr, buffer + offset, length);
+      }      
+    }
+  }
+};
+
 class BufferIterator {
 private:
   const u8_t * ptr;
