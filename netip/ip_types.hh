@@ -58,6 +58,10 @@ public:
 
   inline BufferIterator & operator+= (u16_t count) {
     ptr += count;
+
+    if (ptr > end) {
+      ptr = end;
+    }
     return *this;
   }
 };

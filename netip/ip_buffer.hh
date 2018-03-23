@@ -83,6 +83,25 @@ public:
   ~IP_Buffer () {
     // ...
   }
+
+  inline void copy_address (u16_t byte_offset, const IP_Address & address) {
+    if (byte_offset + address.byte_length () <= buffer_length) {
+      memcpy (buffer + byte_offset, address.byte_buffer (), address.byte_length ());
+    }
+  }
+
+  inline void copy_ns16 (u16_t byte_offset, const ns16_t & value) {
+    if (byte_offset + 2 <= buffer_length) {
+      ns16_t * ptr = (ns16_t *) (buffer + byte_offset);
+      *ptr = value;
+    }
+  }
+
+  void check (Check16 & check, u16_t byte_offset, u16_t length = 0 /* 0 = to end */); // both byte_offset & length must be even
+
+  inline u8_t & operator[] (u16_t i) {
+    return buffer[i];
+  }
 };
 
 class IP_BufferIterator : public BufferIterator {

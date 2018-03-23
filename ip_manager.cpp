@@ -158,8 +158,9 @@ void IP_Manager::tick () {
 	  break;
 
 	case IP_Header::hs_EchoRequest:
-	  if (header.address_destination == host) { // it's for us
-	    add_to_spares (pending); // FIXME // TODO: add support for Echo Reply
+	  if (header.address_destination == host) { // it's for us; we don't respond to broadcast pings
+	    header.ping_to_pong (*pending);
+	    forward (pending);
 	  } else { // forward it
 	    if (!chain_buffers_spare.chain_first ()) { // check if there is a spare - affects priorities
 	      add_to_spares (pending);                 // drop it; more important to have spare buffers than broadcast packets (trying to avoid storms)
@@ -171,6 +172,14 @@ void IP_Manager::tick () {
 
 	case IP_Header::hs_Protocol_Unsupported:
 	  if (header.address_destination == host) { // it's for us - but we can't use it
+	    add_to_spares (pending);
+	  } else { // forward it
+	    forward (pending);
+	  }
+	  break;
+
+	case IP_Header::hs_EchoReply:
+	  if (header.address_destination == host) { // it's for us - but we don't (yet) use it
 	    add_to_spares (pending);
 	  } else { // forward it
 	    forward (pending);

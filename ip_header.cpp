@@ -161,19 +161,20 @@ IP_Header::HeaderSniff IP_Header::sniff (const IP_Buffer & buffer) {
   check.clear ();
 
 #if IP_USE_IPv6
-  if (is_ICMP () || is_TCP () || is_UDP ()) {
+  if (is_ICMP () || is_TCP () || is_UDP ())
 #else
-  if (is_TCP () || is_UDP ()) {
+  if (is_TCP () || is_UDP ())
 #endif
+  {
     /* Checksum has pseudo-header
      */
     address_source.check (check);
     address_destination.check (check);
 
 #if IP_USE_IPv6
-    check += 0;
+    // check += 0;
     check += length;
-    check += 0;
+    // check += 0;
     check += protocol;
 #else
     check += protocol;
@@ -191,12 +192,18 @@ IP_Header::HeaderSniff IP_Header::sniff (const IP_Buffer & buffer) {
     check += h;
 
 #if IP_USE_IPv6
-    if (h[0] == 128) // 129 for an echo reply
+    if ((h[0] == 128 /* echo request */) || (h[0] == 129 /* echo reply*/))
 #else
-    if (h[0] == 8) // 0 for an echo reply
+    if ((h[0] ==   8 /* echo request */) || (h[0] ==   0 /* echo reply*/))
 #endif
     {
-      /* This is an echo request - ping!
+#if IP_USE_IPv6
+      hs = (h[0] == 128) ? hs_EchoRequest : hs_EchoReply;
+#else
+      hs = (h[0] ==   8) ? hs_EchoRequest : hs_EchoReply;
+#endif
+
+      /* This is an echo request/reply - ping!
        */
       I.ns16 (checksum);
       // check += 0;
@@ -206,8 +213,6 @@ IP_Header::HeaderSniff IP_Header::sniff (const IP_Buffer & buffer) {
 
       I.ns16 (h); // sequence number
       check += h;
-
-      hs = hs_EchoRequest;
     } else {
       return hs_Protocol_Unsupported;
     }
@@ -331,6 +336,64 @@ IP_Header::HeaderSniff IP_Header::sniff (const IP_Buffer & buffer) {
   }
 
   return hs;
+}
+
+void IP_Header::ping_to_pong (IP_Buffer & buffer) {
+  Check16 check;
+
+  address_destination = address_source;
+  address_source = IP_Manager::manager().host;
+
+  u8_t header_length;
+
+#if IP_USE_IPv6
+  header_length = 40;
+
+  buffer.copy_address ( 8, address_source);
+  buffer.copy_address (12, address_destination);
+#else
+  header_length = ipv4.IHL << 2;
+
+  buffer.copy_address (12, address_source);
+  buffer.copy_address (16, address_destination);
+
+  ipv4.checksum = 0;
+  buffer.copy_ns16 (10, ipv4.checksum);
+
+  buffer.check (check, 0, header_length);
+
+  ipv4.checksum = check.checksum ();
+  buffer.copy_ns16 (10, ipv4.checksum);
+
+  check.clear ();
+#endif
+
+  /* Checksum has pseudo-header
+   */
+  address_source.check (check);
+  address_destination.check (check);
+
+#if IP_USE_IPv6
+  // check += 0;
+  check += length;
+  // check += 0;
+  check += protocol;
+
+  buffer[header_length] = 129; // type
+#else
+  check += protocol;
+  check += length;
+
+  buffer[header_length] =   0; // type
+#endif
+
+  checksum = 0;
+  buffer.copy_ns16 (header_length + 2, checksum);
+
+  buffer.check (check, header_length, 0 /* to end */);
+
+  checksum = check.checksum ();
+  buffer.copy_ns16 (header_length + 2, checksum);
 }
 
 void IP_Header::defaults (Protocol p) {

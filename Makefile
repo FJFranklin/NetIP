@@ -1,6 +1,7 @@
 all:	nip
 
 ALL_SOURCES=\
+	ip_buffer.cpp \
 	ip_channel.cpp \
 	ip_connection.cpp \
 	ip_header.cpp \

@@ -250,6 +250,7 @@ public:
   enum HeaderSniff {
     hs_Okay = 0,
     hs_EchoRequest,
+    hs_EchoReply,
     hs_IPv4,
     hs_IPv4_FrameError,
     hs_IPv4_PacketTooShort,
@@ -263,6 +264,8 @@ public:
   };
 
   HeaderSniff sniff (const IP_Buffer & buffer);
+
+  void ping_to_pong (IP_Buffer & buffer);
 
   void defaults (Protocol p);
 };

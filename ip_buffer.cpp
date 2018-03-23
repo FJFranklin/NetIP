@@ -21,44 +21,35 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __ip_config_hh__
-#define __ip_config_hh__
+#include "netip/ip_manager.hh"
 
-/* Protocol options
- */
-#define IP_USE_IPv6 1
+void IP_Buffer::check (Check16 & check, u16_t byte_offset, u16_t length /* 0 = to end */) {
+  if (byte_offset + length > buffer_length) {
+    return;
+  }
+  if ((byte_offset & 1) || (length & 1)) {
+    return;
+  }
 
-#define IP_DEBUG    1
+  IP_BufferIterator I(*this);
+  I += byte_offset;
 
-/* Architecture build options
- */
-#ifndef IP_ARCH_UNIX
-#define IP_ARCH_ARDUINO      1
-#define IP_ARCH_UNIX         0
-#endif
+  ns16_t h;
 
-#if IP_ARCH_UNIX
-#include "unix/ip_arch.hh"
-#endif
-#if IP_ARCH_ARDUINO
-#include "arduino/ip_arch.hh"
-#endif
-
-/* (comma-separated) default host & gateway (default router) addresses and netmask
- */
-#if IP_USE_IPv6
-#define IP_Address_DefaultHost    0xfd00,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0501
-#define IP_Address_DefaultGateway 0xfd00,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x05fe
-#define IP_Address_DefaultNetmask 0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xff00
-#else
-#define IP_Address_DefaultHost    192,168,  5,  1
-#define IP_Address_DefaultGateway 192,168,  5,254 // .255 should be broadcast; .0 reserved as a network identifier;
-#define IP_Address_DefaultNetmask 255,255,255,  0
-#endif
-
-/* parameters affecting memory use
- */
-#define IP_Buffer_WordCount  64   // buffer size in (2-byte) words; one included per channel
-#define IP_Buffer_Extras      1   // how many extra buffers (1 minimum) to use to increase flexibility and responsiveness
-
-#endif /* ! __ip_config_hh__ */
+  if (length) {
+    while (length--) {
+      I.ns16 (h);
+      check += h;
+    }
+  } else {
+    while (I.remaining () > 1) {
+      I.ns16 (h);
+      check += h;
+    }
+    if (I.remaining ()) { // an odd byte
+      h[0] = *(*I);
+      h[1] = 0;
+      check += h;
+    }
+  }
+}

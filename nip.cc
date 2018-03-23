@@ -57,6 +57,9 @@ public:
     case IP_Header::hs_EchoRequest:
       fputs ("hs_EchoRequest\n", stderr);
       break;
+    case IP_Header::hs_EchoReply:
+      fputs ("hs_EchoReply\n", stderr);
+      break;
     case IP_Header::hs_IPv4:
       fputs ("hs_IPv4\n", stderr);
       break;
