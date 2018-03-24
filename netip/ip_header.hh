@@ -25,8 +25,7 @@
 #define __ip_header_hh__
 
 #include "ip_address.hh"
-
-class IP_Buffer;
+#include "ip_buffer.hh"
 
 struct IP_Header_IPv4 {
   u8_t   IHL;      // Internet Header Length (IHL): 5-15 32-bit fields in header
@@ -34,10 +33,62 @@ struct IP_Header_IPv4 {
   u8_t   flags;    // [bit 0: Reserved (must be zero) | bit 1: Don't Fragment (DF) | bit 2: More Fragments (MF)]
   ns16_t fragoff;  // Fragment Offset: (13 bits) [measured in units of eight-byte blocks]
   ns16_t checksum; // Header Checksum: (16 bits)
+
+  inline u8_t version () const {
+    return 4;
+  }
+
+  inline u8_t header_length () const {
+    return IHL << 2;
+  }
+
+  inline void defaults () {
+    IHL = 5;
+    id = 0;
+    flags = 0;
+    fragoff = 0;
+    checksum = 0;
+  }
+
+  inline u8_t protocol_echo_request () const {
+    return 8;
+  }
+
+  inline u8_t protocol_echo_reply () const {
+    return 0;
+  }
+
+  inline bool is_IPv6 () {
+    return false;
+  }
 };
 
 struct IP_Header_IPv6 {
   ns32_t flow;     // Flow Label: (20 bits) [if non-zero, packets should stay on the same path, so that they will not be reordered]
+
+  inline u8_t version () const {
+    return 6;
+  }
+
+  inline u8_t header_length () const {
+    return 40;
+  }
+
+  inline void defaults () {
+    flow = 0;
+  }
+
+  inline u8_t protocol_echo_request () const {
+    return 128;
+  }
+
+  inline u8_t protocol_echo_reply () const {
+    return 129;
+  }
+
+  inline bool is_IPv6 () {
+    return true;
+  }
 };
 
 struct IP_Header_TCP {
@@ -187,6 +238,16 @@ struct IP_Header_UDP {
   ns16_t length;   // Length: (16 bits) [the length in bytes of the UDP header and UDP data]
 };
 
+struct IP_Header_ICMP { // currently we only support echo request / reply
+  u8_t type;
+  u8_t code;
+
+  ns16_t id;
+  ns16_t seq_no;
+
+  ns32_t payload;
+};
+
 class IP_Header {
 public:
   enum Protocol {
@@ -201,6 +262,9 @@ public:
 
   /* IP fields common to IPv4 & IPv6
    */
+  IP_Address address_source;
+  IP_Address address_destination;
+
   u8_t   version;  // Version: 4 or 6
   u8_t   DSCP;     // Differentiated Services Code Point (DSCP): (6 bits) // ??
   u8_t   ECN;      // Explicit Congestion Notification (ECN): (2 bits) // ??
@@ -220,15 +284,12 @@ public:
     return protocol == (u8_t) p_UDP;
   }
 
-  IP_Address address_source;
-  IP_Address address_destination;
-
   /* IP version-specific fields
    */
 #if IP_USE_IPv6
-    struct IP_Header_IPv6 ipv6;
+    struct IP_Header_IPv6 ip;
 #else
-    struct IP_Header_IPv4 ipv4;
+    struct IP_Header_IPv4 ip;
 #endif
 
   /* Protocol fields common to TCP & UDP
@@ -244,8 +305,11 @@ public:
 
   /* Protocol-specific fields
    */
-  struct IP_Header_TCP tcp;
-  struct IP_Header_UDP udp;
+  union {
+    struct IP_Header_TCP  tcp;
+    struct IP_Header_UDP  udp;
+    struct IP_Header_ICMP icmp;
+  } proto;
 
   enum HeaderSniff {
     hs_Okay = 0,
@@ -264,6 +328,8 @@ public:
   };
 
   HeaderSniff sniff (const IP_Buffer & buffer);
+
+  void pseudo_header (Check16 & check) const;
 
   void ping_to_pong (IP_Buffer & buffer);
 

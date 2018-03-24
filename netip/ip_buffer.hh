@@ -24,7 +24,7 @@
 #ifndef __ip_buffer_hh__
 #define __ip_buffer_hh__
 
-#include "ip_header.hh"
+#include "ip_address.hh"
 
 class IP_Buffer : public Buffer, public Link {
 private:

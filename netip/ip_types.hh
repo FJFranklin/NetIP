@@ -166,17 +166,6 @@ public:
     return u.sword[1];
   }
 
-  ns32_t () {
-    u.lword = 0;
-  }
-
-  ns32_t (int i) {
-    *this = (u32_t) i;
-  }
-
-  ~ns32_t () {
-  }
-
   inline ns32_t & operator= (u32_t i) {
     u.byte[3] =  i & 0xFF;
     i >>= 8;
@@ -223,6 +212,12 @@ public:
 					    ((u.byte[1] < rhs.u.byte[1]) || ((u.byte[1] == rhs.u.byte[1]) &&
 									     ((u.byte[2] < rhs.u.byte[2]) || ((u.byte[2] == rhs.u.byte[2]) &&
 													      (u.byte[3] < rhs.u.byte[3])))))));
+  }
+
+  static inline ns32_t convert (u32_t i) {
+    ns32_t c;
+    c = i;
+    return c;
   }
 };
 
