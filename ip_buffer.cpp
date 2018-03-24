@@ -23,33 +23,3 @@
 
 #include "netip/ip_manager.hh"
 
-void IP_Buffer::check (Check16 & check, u16_t byte_offset, u16_t length /* 0 = to end */) {
-  if (byte_offset + length > buffer_length) {
-    return;
-  }
-  if ((byte_offset & 1) || (length & 1)) {
-    return;
-  }
-
-  IP_BufferIterator I(*this);
-  I += byte_offset;
-
-  ns16_t h;
-
-  if (length) {
-    while (length--) {
-      I.ns16 (h);
-      check += h;
-    }
-  } else {
-    while (I.remaining () > 1) {
-      I.ns16 (h);
-      check += h;
-    }
-    if (I.remaining ()) { // an odd byte
-      h[0] = *(*I);
-      h[1] = 0;
-      check += h;
-    }
-  }
-}

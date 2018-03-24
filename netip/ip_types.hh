@@ -385,6 +385,11 @@ private:
   u8_t * data_end;   // must point to a writable byte
 
 public:
+  inline void clear () {
+    data_start = buffer_start;
+    data_end   = buffer_start;
+  }
+
   inline bool push (u8_t byte) {
     bool bCanPush = true;
 
@@ -556,6 +561,28 @@ public:
       memcpy (ptr, buffer + offset, count);
     }
     return count;
+  }
+
+  inline void check_16 (Check16 & check, u16_t offset, u16_t length = 0) const { // where 0 = 'to the end'
+    if (offset < buffer_used) {
+      if ((!length) || (length > buffer_used - offset)) {
+	length = buffer_used - offset;
+      }
+
+      const u8_t * ptr = buffer + offset;
+
+      while (length > 1) {
+	u16_t next = *ptr++ << 8;
+	next |= *ptr++;
+	check += next;
+	--length;
+	--length;
+      }
+      if (length) {
+	u16_t next = *ptr << 8;
+	check += next;
+      }
+    }
   }
 };
 

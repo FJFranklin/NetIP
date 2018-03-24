@@ -349,21 +349,21 @@ void IP_Header::ping_to_pong (IP_Buffer & buffer) {
 #if IP_USE_IPv6
   header_length = 40;
 
-  buffer.copy_address ( 8, address_source);
-  buffer.copy_address (12, address_destination);
+  buffer.copy ( 8, address_source);
+  buffer.copy (12, address_destination);
 #else
   header_length = ipv4.IHL << 2;
 
-  buffer.copy_address (12, address_source);
-  buffer.copy_address (16, address_destination);
+  buffer.copy (12, address_source);
+  buffer.copy (16, address_destination);
 
   ipv4.checksum = 0;
-  buffer.copy_ns16 (10, ipv4.checksum);
+  buffer.ns16(10) = ipv4.checksum;
 
-  buffer.check (check, 0, header_length);
+  buffer.check_16 (check, 0, header_length);
 
   ipv4.checksum = check.checksum ();
-  buffer.copy_ns16 (10, ipv4.checksum);
+  buffer.ns16(10) = ipv4.checksum;
 
   check.clear ();
 #endif
@@ -388,12 +388,12 @@ void IP_Header::ping_to_pong (IP_Buffer & buffer) {
 #endif
 
   checksum = 0;
-  buffer.copy_ns16 (header_length + 2, checksum);
+  buffer.ns16(header_length + 2) = checksum;
 
-  buffer.check (check, header_length, 0 /* to end */);
+  buffer.check_16 (check, header_length, 0 /* to end */);
 
   checksum = check.checksum ();
-  buffer.copy_ns16 (header_length + 2, checksum);
+  buffer.ns16(header_length + 2) = checksum;
 }
 
 void IP_Header::defaults (Protocol p) {

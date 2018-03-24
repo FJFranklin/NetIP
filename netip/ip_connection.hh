@@ -35,6 +35,9 @@ private:
   IP_Timer     timer;
   IP_Channel * channel;
 
+  u8_t fifo_buffer[IP_Connection_FIFO];
+  FIFO fifo;
+
   struct {
     ns32_t rcv_nxt;     /**< The sequence number that we expect to receive next. */
     ns32_t snd_nxt;     /**< The sequence number that was last sent by us. */
@@ -59,6 +62,10 @@ private:
 #define IP_Connection_TimeoutSet       0x8000
 
 public:
+  inline u16_t read (u8_t * ptr, u16_t length) {
+    return fifo.read (ptr, length);
+  }
+
   /* Note: reset() closes the connection and doesn't open the new one.
    */
   void reset (IP_Header::Protocol p = IP_Header::p_TCP, u16_t port = 0); // port 0 => find an unused port in range 4096-32000
@@ -67,7 +74,8 @@ public:
    */
   IP_Connection (IP_Header::Protocol p = IP_Header::p_TCP, u16_t port = 0) :
     timer(this),
-    channel(0)
+    channel(0),
+    fifo(fifo_buffer, IP_Connection_FIFO)
   {
     reset (p, port);
   }
