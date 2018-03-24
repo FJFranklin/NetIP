@@ -11,6 +11,18 @@ ALL_SOURCES=\
 	ip_types.cpp \
 	netip/unix/ip_arch.cc
 
+ALL_OBJECTS=\
+	nip.o\
+	ip_buffer.o \
+	ip_channel.o \
+	ip_connection.o \
+	ip_header.o \
+	ip_manager.o \
+	ip_serial.o \
+	ip_timer.o \
+	ip_types.o \
+	netip/unix/ip_arch.o
+
 ALL_HEADERS=\
 	netip/ip_address.hh \
 	netip/ip_buffer.hh \
@@ -28,5 +40,14 @@ ALL_HEADERS=\
 	netip/unix/ip_arch_serial.cc \
 	tests.hh
 
-nip:	nip.cc $(ALL_SOURCES) $(ALL_HEADERS)
-	c++ -o nip nip.cc $(ALL_SOURCES) -DIP_ARCH_UNIX -I.
+clean:	
+	rm $(ALL_OBJECTS)
+
+nip:	$(ALL_OBJECTS) $(ALL_HEADERS)
+	c++ -o nip $(ALL_OBJECTS)
+
+%.o:	%.cpp $(ALL_HEADERS)
+	c++ -c $< -o $@ -DIP_ARCH_UNIX -I.
+
+%.o:	%.cc $(ALL_HEADERS)
+	c++ -c $< -o $@ -DIP_ARCH_UNIX -I.

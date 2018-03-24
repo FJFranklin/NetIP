@@ -179,11 +179,11 @@ public:
 
   inline ns32_t & operator= (u32_t i) {
     u.byte[3] =  i & 0xFF;
-    i <<= 8;
+    i >>= 8;
     u.byte[2] =  i & 0xFF;
-    i <<= 8;
+    i >>= 8;
     u.byte[1] =  i & 0xFF;
-    i <<= 8;
+    i >>= 8;
     u.byte[0] =  i;
     return *this;
   }
@@ -407,6 +407,7 @@ public:
     }
     return bCanPush;
   }
+
   inline bool pop (u8_t & byte) {
     if (data_start == data_end) { // buffer must be empty
       return false;
@@ -423,7 +424,7 @@ public:
     buffer_start(byte_buffer),
     buffer_end(byte_buffer+capacity),
     data_start(byte_buffer),
-    data_end(byte_buffer+1)
+    data_end(byte_buffer)
   {
     // ...
   }
@@ -431,6 +432,10 @@ public:
   ~FIFO () {
     // ...
   }
+
+  u16_t read (u8_t * ptr, u16_t length);
+
+  u16_t write (const u8_t * ptr, u16_t length);
 };
 
 class Buffer {

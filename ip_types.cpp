@@ -23,6 +23,8 @@
 
 #include "netip/ip_types.hh"
 
+ns32_t Buffer::fake_word; // static member variable
+
 bool Link::in_chain (const Link * link) const {
   bool bMatched = false;
 
@@ -67,4 +69,120 @@ void Link::remove_from_chain (Link *& link_first, Link *& link_last, Link * link
       }
     }
   }
+}
+
+u16_t FIFO::read (u8_t * ptr, u16_t length) {
+  u16_t count = 0;
+
+  if (ptr && length) {
+    if (data_end > data_start) {
+
+      count = data_end - data_start;             // i.e., bytes in FIFO
+      count = (count > length) ? length : count; // or length, if less
+
+      memcpy (ptr, data_start, count);
+      data_start += count;
+
+    } else if (data_end < data_start) {
+
+      count = buffer_end - data_start;           // i.e., bytes in FIFO *at the end*
+      count = (count > length) ? length : count; // or length, if less
+
+      memcpy (ptr, data_start, count);
+      data_start += count;
+
+      if (data_start == buffer_end) { // wrap-around
+	data_start = buffer_start;
+
+	length -= count;                         // how much we still want to read
+
+	u16_t extra = data_end - data_start;     // i.e., bytes in FIFO
+
+	if (length && extra) {                       // we can read more...
+	  extra = (extra > length) ? length : extra; // or length, if less
+
+	  memcpy (ptr, data_start, extra);
+	  data_start += extra;
+
+	  count += extra;
+	}
+      }
+
+    } // else (data_end == data_start) => FIFO is empty
+  }
+  return count;
+}
+
+u16_t FIFO::write (const u8_t * ptr, u16_t length) {
+  u16_t count = 0;
+
+  if (ptr && length) {
+    if (data_end > data_start) {
+
+      /* this is where we need to worry about wrap-around
+       */
+
+      if (data_start == buffer_start) { // we're *not* able to wrap-around
+
+	count = buffer_end - data_end - 1;         // i.e., usable free space in FIFO *at the end*
+	count = (count > length) ? length : count; // or length, if less
+
+	memcpy (data_end, ptr, count);
+	data_end += count;
+
+      } else { // we *are* able to wrap-around
+
+	count = buffer_end - data_end;             // i.e., usable free space in FIFO *at the end*
+	count = (count > length) ? length : count; // or length, if less
+
+	memcpy (data_end, ptr, count);
+	data_end += count;
+
+	if (data_end == buffer_end) { // wrap-around
+	  data_end = buffer_start;
+
+	  length -= count;                             // how much we still want to write
+
+	  u16_t extra = data_start - data_end - 1;     // i.e., usable free space in FIFO
+
+	  if (length && extra) {                       // we can write more...
+	    extra = (extra > length) ? length : extra; // or length, if less
+
+	    memcpy (data_end, ptr, extra);
+	    data_end += extra;
+
+	    count += extra;
+	  }
+	}
+
+      }
+
+    } else if (data_end < data_start) {
+
+      count = data_start - data_end - 1;         // i.e., usable free space in FIFO
+      count = (count > length) ? length : count; // or length, if less
+
+      /* don't need to worry about wrap-around
+       */
+      memcpy (data_end, ptr, count);
+      data_end += count;
+
+    } else { // (data_end == data_start)
+
+      /* the FIFO is empty - we can move the pointers for convenience
+       */
+      data_start = buffer_start;
+      data_end   = buffer_start;
+
+      count = buffer_end - buffer_start - 1;     // i.e., maximum number of bytes the FIFO can hold
+      count = (count > length) ? length : count; // or length, if less
+
+      /* don't need to worry about wrap-around
+       */
+      memcpy (data_end, ptr, count);
+      data_end += count;
+
+    }
+  }
+  return count;
 }
