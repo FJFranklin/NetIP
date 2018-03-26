@@ -33,10 +33,18 @@ class IP_Connection : public Link, public IP_TimerClient {
 private:
   IP_Header    header;
   IP_Timer     timer;
-  IP_Channel * channel;
 
-  u8_t fifo_buffer[IP_Connection_FIFO];
-  FIFO fifo;
+  IP_Buffer * buffer_in;
+  IP_Buffer * buffer_out;
+
+  u16_t data_in_offset;
+  u16_t data_out_offset;
+
+  u8_t fifo_read_buffer[IP_Connection_FIFO];
+  FIFO fifo_read;
+
+  u8_t fifo_write_buffer[IP_Connection_FIFO];
+  FIFO fifo_write;
 
   struct {
     ns32_t rcv_nxt;     /**< The sequence number that we expect to receive next. */
@@ -63,7 +71,10 @@ private:
 
 public:
   inline u16_t read (u8_t * ptr, u16_t length) {
-    return fifo.read (ptr, length);
+    return fifo_read.read (ptr, length); // TODO
+  }
+  inline u16_t write (const u8_t * ptr, u16_t length) {
+    return fifo_write.write (ptr, length); // TODO
   }
 
   /* Note: reset() closes the connection and doesn't open the new one.
@@ -74,8 +85,10 @@ public:
    */
   IP_Connection (IP_Header::Protocol p = IP_Header::p_TCP, u16_t port = 0) :
     timer(this),
-    channel(0),
-    fifo(fifo_buffer, IP_Connection_FIFO)
+    buffer_in(0),
+    buffer_out(0),
+    fifo_read(fifo_read_buffer, IP_Connection_FIFO),
+    fifo_write(fifo_write_buffer, IP_Connection_FIFO)
   {
     reset (p, port);
   }
@@ -97,6 +110,10 @@ public:
   inline bool listening (const ns16_t & port) const {
     return ((flags & IP_Connection_Open) /* && (header.port_source == port) */);
   }
+
+  /* Note: Returns true if the connection can & will handle the incoming buffer
+   */
+  bool accept (IP_Buffer * buffer);
 
   /* Note: Open connection to remote address/port
    */

@@ -26,8 +26,6 @@
 void IP_Connection::reset (IP_Header::Protocol p, u16_t port) {
   flags = 0;
 
-  channel = 0;
-
   header.defaults (p);
 #if 0
   if (port) {
@@ -66,6 +64,10 @@ bool IP_Connection::timeout () { // return true if the timer should be reset & r
   }
   // TODO:
   return false;
+}
+
+bool IP_Connection::accept (IP_Buffer * buffer) {
+  return false; // FIXME
 }
 
 bool IP_Connection::connect (const IP_Address & address, u16_t port) {

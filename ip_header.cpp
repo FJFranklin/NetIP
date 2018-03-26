@@ -166,7 +166,6 @@ IP_Header::HeaderSniff IP_Header::sniff (const IP_Buffer & buffer) {
     checksum_calc = check.checksum ();
 
     if (checksum_sent != checksum_calc) {
-      fprintf (stderr, "%x != %x", (unsigned) (u16_t) checksum_sent, (unsigned) (u16_t) checksum_calc);
       return hs_Protocol_Checksum;
     }
     return hs_Okay;

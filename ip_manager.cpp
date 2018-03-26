@@ -97,6 +97,23 @@ IP_Channel * IP_Manager::channel (u8_t number) {
   return *I;
 }
 
+void IP_Manager::connection_handover (IP_Buffer * buffer) {
+  bool bHandedOver = false;
+
+  Chain<IP_Connection>::iterator I = chain_connection.begin ();
+
+  while (*I) {
+    if ((*I)->accept (buffer)) {
+      bHandedOver = true;
+      break;
+    }
+    ++I;
+  }
+  if (!bHandedOver) {
+    add_to_spares (buffer);
+  }
+}
+
 bool IP_Manager::queue (IP_Buffer *& buffer) {
   bool bQueued = false;
 
@@ -114,8 +131,99 @@ bool IP_Manager::queue (IP_Buffer *& buffer) {
 }
 
 void IP_Manager::forward (IP_Buffer * buffer) {
-  // TODO
-  add_to_spares (buffer); // FIXME
+  u8_t channel_number;
+
+  IP_Channel * ch = 0;
+
+  switch (channel_for_destination (channel_number, buffer->ip().destination ())) {
+
+  case ri_Destination_Local:  // route through local network to final destination
+  case ri_Gateway_Local:      // route through local network to gateway
+    ch = channel (channel_number);
+    if (ch) {
+      ch->send (buffer);
+    } else {
+      add_to_spares (buffer);
+    }
+    break;
+
+  case ri_Destination_Self:   // that's us!
+    queue (buffer);
+    break;
+
+  case ri_Gateway_Self:       // we're the gateway - route to external network
+    // TODO: route to external network
+
+  case ri_InvalidAddress:     // reserved network address, or channel not registered
+    add_to_spares (buffer);
+    break;
+  }
+}
+
+void IP_Manager::register_source (u8_t channel, const IP_Address & source) {
+  if (channel > 0x0F) { // allowed a maximum of 15 external channels; and 0 = self
+    return;
+  }
+  if (!is_local_network (source)) {
+    return;
+  }
+
+  u8_t id = source.local_network_id ();
+
+  if ((id == 0 /* reserved as a network identifier */) || (id == 255 /* reserved for broadcasts */)) {
+    return;
+  }
+
+  if ((--id) & 1) {
+    id >>= 1;
+    channel_register[id] &= 0xF0;
+    channel_register[id] |= channel;
+  } else {
+    id >>= 1;
+    channel_register[id] &= 0x0F;
+    channel_register[id] |= (channel << 4);
+  }
+}
+
+IP_Manager::RoutingInfo IP_Manager::channel_for_destination (u8_t & channel, const IP_Address & destination) const {
+  u8_t id;
+
+  RoutingInfo ri;
+
+  if (is_local_network (destination)) {
+    id = destination.local_network_id ();
+
+    if (id == host.local_network_id ()) {
+      channel = 0;
+      return ri_Destination_Self;
+    }
+    ri = ri_Destination_Local;
+  } else {
+    id = gateway.local_network_id ();
+
+    if (id == host.local_network_id ()) {
+      channel = 0;
+      return ri_Gateway_Self;
+    }
+    ri = ri_Gateway_Local;
+  }
+
+  if ((id == 0 /* reserved as a network identifier */) || (id == 255 /* reserved for broadcasts */)) {
+    return ri_InvalidAddress;
+  }
+
+  if ((--id) & 1) {
+    id >>= 1;
+    channel = channel_register[id] & 0x0F;
+  } else {
+    id >>= 1;
+    channel = channel_register[id] >> 4;
+  }
+
+  if (!channel) {
+    return ri_InvalidAddress;
+  }
+  return ri;
 }
 
 void IP_Manager::tick () {
@@ -149,15 +257,20 @@ void IP_Manager::tick () {
 
       if (pending) {
 	switch (IP_Header::sniff (*pending)) {
+
 	case IP_Header::hs_Okay:
+	  register_source (pending->channel (), pending->ip().source ());
+
 	  if (pending->ip().destination () == host) { // it's for us
-	    add_to_spares (pending); // FIXME // TODO: hand over to appropriate connection
+	    connection_handover (pending); // hand over to appropriate connection
 	  } else { // forward it
 	    forward (pending);
 	  }
 	  break;
 
 	case IP_Header::hs_EchoRequest:
+	  register_source (pending->channel (), pending->ip().source ());
+
 	  if (pending->ip().destination () == host) { // it's for us; we don't respond to broadcast pings
 	    IP_Header::ping_to_pong (*pending);
 	    forward (pending);
@@ -170,16 +283,20 @@ void IP_Manager::tick () {
 	  }
 	  break;
 
-	case IP_Header::hs_Protocol_Unsupported:
-	  if (pending->ip().destination () == host) { // it's for us - but we can't use it
+	case IP_Header::hs_EchoReply:
+	  register_source (pending->channel (), pending->ip().source ());
+
+	  if (pending->ip().destination () == host) { // it's for us - but we don't (yet) use it
 	    add_to_spares (pending);
 	  } else { // forward it
 	    forward (pending);
 	  }
 	  break;
 
-	case IP_Header::hs_EchoReply:
-	  if (pending->ip().destination () == host) { // it's for us - but we don't (yet) use it
+	case IP_Header::hs_Protocol_Unsupported:
+	  register_source (pending->channel (), pending->ip().source ());
+
+	  if (pending->ip().destination () == host) { // it's for us - but we can't use it
 	    add_to_spares (pending);
 	  } else { // forward it
 	    forward (pending);

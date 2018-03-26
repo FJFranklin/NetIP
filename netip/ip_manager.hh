@@ -32,6 +32,8 @@ class IP_UDP_Connection;
 
 class IP_Manager : public IP_Clock {
 private:
+  u8_t channel_register[127];
+
   IP_Buffer buffers[IP_Buffer_Extras];
 
   Chain<IP_Buffer> chain_buffers_spare;
@@ -42,7 +44,7 @@ private:
 
   u16_t  last_port; // counter for generating free port numbers
 
-  ns32_t tcp_iss;   // TCP initial sequence number
+  ns32_t tcp_iss;   // TCP initial sequence number // TODO - is this used/needed?
 
   u8_t   ticker;    // internal cooperative management
 
@@ -96,7 +98,20 @@ public:
   }
 
 private:
+  void connection_handover (IP_Buffer * buffer);
+
+  enum RoutingInfo {
+    ri_InvalidAddress = 0, // reserved network address, or channel not registered
+    ri_Destination_Self,   // that's us!
+    ri_Destination_Local,  // route through local network to final destination
+    ri_Gateway_Self,       // we're the gateway - route to external network
+    ri_Gateway_Local       // route through local network to gateway
+  };
+
   void forward (IP_Buffer * buffer);
+  void register_source (u8_t channel, const IP_Address & source);
+
+  RoutingInfo channel_for_destination (u8_t & channel, const IP_Address & destination) const;
 
   /* clock functions
    */
