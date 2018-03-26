@@ -24,7 +24,7 @@
 #ifndef __ip_buffer_hh__
 #define __ip_buffer_hh__
 
-#include "ip_address.hh"
+#include "ip_protocol.hh"
 
 class IP_Buffer : public Buffer, public Link {
 private:
@@ -55,35 +55,54 @@ public:
   inline void copy (u16_t byte_offset, const IP_Address & address) {
     write (byte_offset, address.byte_buffer (), address.byte_length ());
   }
-};
 
-class IP_BufferIterator : public BufferIterator {
-public:
-  IP_BufferIterator (const IP_Buffer & B) :
-    BufferIterator(B.bytes (), B.length ())
-  {
-    // ...
+#if IP_USE_IPv6
+  inline struct IP_Header_IPv6 & ip () {
+    return *((struct IP_Header_IPv6 *) buffer);
+  }
+  inline const struct IP_Header_IPv6 & ip () const {
+    return *((const struct IP_Header_IPv6 *) buffer);
+  }
+#else // IP_USE_IPv6
+  inline struct IP_Header_IPv4 & ip () {
+    return *((struct IP_Header_IPv4 *) buffer);
+  }
+  inline const struct IP_Header_IPv4 & ip () const {
+    return *((const struct IP_Header_IPv4 *) buffer);
+  }
+#endif
+
+  inline u8_t protocol_offset () const {
+    if ((buffer[0] & 0xF0) == 0x60) {
+      return 40;
+    }
+    if ((buffer[0] & 0xF0) == 0x40) {
+      return (buffer[0] & 0x0F) << 2;
+    }
+    return 0; // hmm...
   }
 
-  ~IP_BufferIterator () {
-    // ...
+  inline struct IP_Header_TCP & tcp () {
+    return *((struct IP_Header_TCP *) (buffer + protocol_offset ()));
+  }
+  inline const struct IP_Header_TCP & tcp () const {
+    return *((const struct IP_Header_TCP *) (buffer + protocol_offset ()));
   }
 
-  inline void ns16 (ns16_t & value) {
-    value = *this;
-    ++(*this);
-    ++(*this);
+  inline struct IP_Header_UDP & udp () {
+    return *((struct IP_Header_UDP *) (buffer + protocol_offset ()));
+  }
+  inline const struct IP_Header_UDP & udp () const {
+    return *((const struct IP_Header_UDP *) (buffer + protocol_offset ()));
   }
 
-  inline void ns32 (ns32_t & value) {
-    value = *this;
-    *this += 4;
+  inline struct IP_Header_ICMP & icmp () {
+    return *((struct IP_Header_ICMP *) (buffer + protocol_offset ()));
+  }
+  inline const struct IP_Header_ICMP & icmp () const {
+    return *((const struct IP_Header_ICMP *) (buffer + protocol_offset ()));
   }
 
-  inline void address (IP_Address & value) {
-    value = *this;
-    *this += value.byte_length ();
-  }
 };
 
 #endif /* ! __ip_buffer_hh__ */

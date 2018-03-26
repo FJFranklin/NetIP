@@ -40,8 +40,6 @@ private:
   Chain<IP_Connection> chain_connection; // IP connections across network
   Chain<IP_Channel>    chain_channel;    // Hardware connections to neighbouring devices
 
-  IP_Header header;
-
   u16_t  last_port; // counter for generating free port numbers
 
   ns32_t tcp_iss;   // TCP initial sequence number

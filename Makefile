@@ -32,6 +32,7 @@ ALL_HEADERS=\
 	netip/ip_defines.hh \
 	netip/ip_header.hh \
 	netip/ip_manager.hh \
+	netip/ip_protocol.hh \
 	netip/ip_serial.hh \
 	netip/ip_timer.hh \
 	netip/ip_types.hh \

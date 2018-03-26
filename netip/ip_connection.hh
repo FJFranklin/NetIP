@@ -95,7 +95,7 @@ public:
   /* Note: Returns true if the connection is listening on local port
    */
   inline bool listening (const ns16_t & port) const {
-    return ((flags & IP_Connection_Open) && (header.port_source == port));
+    return ((flags & IP_Connection_Open) /* && (header.port_source == port) */);
   }
 
   /* Note: Open connection to remote address/port

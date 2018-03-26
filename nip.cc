@@ -50,9 +50,12 @@ public:
     B.append (buffer, length);
 
     IP_Header H;
-    switch (H.sniff (B)) {
+    switch (IP_Header::sniff (B)) {
     case IP_Header::hs_Okay:
       fputs ("hs_Okay\n", stderr);
+      break;
+    case IP_Header::hs_FrameError:
+      fputs ("hs_FrameError\n", stderr);
       break;
     case IP_Header::hs_EchoRequest:
       fputs ("hs_EchoRequest\n", stderr);
@@ -83,6 +86,9 @@ public:
       break;
     case IP_Header::hs_Protocol_Unsupported:
       fputs ("hs_Protocol_Unsupported\n", stderr);
+      break;
+    case IP_Header::hs_Protocol_FrameError:
+      fputs ("hs_Protocol_FrameError\n", stderr);
       break;
     case IP_Header::hs_Protocol_PacketTooShort:
       fputs ("hs_Protocol_PacketTooShort\n", stderr);

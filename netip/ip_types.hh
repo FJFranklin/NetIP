@@ -93,6 +93,10 @@ public:
     return (((u16_t) byte[0]) << 8) | ((u16_t) byte[1]);
   }
 
+  inline operator bool () const {
+    return (byte[0] || byte[1]);
+  }
+
   inline bool compare (ns16_t i) const {
     return *((u16_t *) byte) == *((u16_t *) i.byte);
   }
@@ -445,8 +449,9 @@ private:
   u8_t * buffer;
 
   u16_t  buffer_max; // maximum length
+protected:
   u16_t  buffer_used;
-
+private:
   u8_t   ref_count;
 
 public:
@@ -465,6 +470,14 @@ public:
       if (buffer_used < (index + 1)) {
 	buffer_used = index + 1;
       }
+      return buffer[index];
+    }
+
+    // bad indexing!
+    return fake_word[0];
+  }
+  inline const u8_t & operator[] (u16_t index) const {
+    if (index < buffer_max) {
       return buffer[index];
     }
 
@@ -507,10 +520,10 @@ public:
     return --ref_count;
   }
 
-  Buffer (u8_t * byte_buffer, u16_t capacity) :
+  Buffer (u8_t * byte_buffer, u16_t capacity, bool bFull = false) :
     buffer(byte_buffer),
     buffer_max(capacity),
-    buffer_used(0),
+    buffer_used(bFull ? capacity : 0),
     ref_count(0)
   {
     // ...

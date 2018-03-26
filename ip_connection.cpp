@@ -29,7 +29,7 @@ void IP_Connection::reset (IP_Header::Protocol p, u16_t port) {
   channel = 0;
 
   header.defaults (p);
-
+#if 0
   if (port) {
     flags |= IP_Connection_LocalSpecified;
     header.port_source = port;
@@ -37,6 +37,7 @@ void IP_Connection::reset (IP_Header::Protocol p, u16_t port) {
     header.port_source = IP_Manager::manager().available_port ();
   }
   // TODO
+#endif
 }
 
 void IP_Connection::open () {
@@ -68,6 +69,7 @@ bool IP_Connection::timeout () { // return true if the timer should be reset & r
 }
 
 bool IP_Connection::connect (const IP_Address & address, u16_t port) {
+#if 0
   if (tcp.tcpstateflags != UIP_CLOSED) {
     return false;
   }
@@ -100,6 +102,7 @@ bool IP_Connection::connect (const IP_Address & address, u16_t port) {
   tcp.rto = UIP_RTO;
   tcp.sa = 0;
   tcp.sv = 16;   /* Initial value of the RTT variance. */
+#endif
 
   return true;
 }

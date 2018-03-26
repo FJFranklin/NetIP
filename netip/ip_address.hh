@@ -68,7 +68,7 @@ public:
   inline bool compare (const IP_Address & rhs, const IP_Address & mask) const {
     bool bMatch = true;
     for (u8_t i = 0; i < IP_Address_WordCount; i++) {
-      if ((address[i] & mask.address[i]) != (rhs.address[i] & mask.address[i])) {
+      if (((u16_t) address[i] & (u16_t) mask.address[i]) != ((u16_t) rhs.address[i] & (u16_t) mask.address[i])) {
 	bMatch = false;
 	break;
       }
