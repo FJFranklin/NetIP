@@ -283,9 +283,9 @@ void IP_Manager::tick () {
 
       if (pending) {
 	DEBUG_PRINT("IP_Manager::tick: pending\n");
-	switch (IP_Header::sniff (*pending)) {
+	switch (pending->sniff ()) {
 
-	case IP_Header::hs_Okay:
+	case IP_Buffer::hs_Okay:
 	  DEBUG_PRINT("IP_Manager::tick: pending: Okay\n");
 	  register_source (pending->channel (), pending->ip().source ());
 
@@ -296,12 +296,12 @@ void IP_Manager::tick () {
 	  }
 	  break;
 
-	case IP_Header::hs_EchoRequest:
+	case IP_Buffer::hs_EchoRequest:
 	  DEBUG_PRINT("IP_Manager::tick: Echo Request\n");
 	  register_source (pending->channel (), pending->ip().source ());
 
 	  if (pending->ip().destination () == host) { // it's for us; we don't respond to broadcast pings
-	    IP_Header::ping_to_pong (*pending);
+	    pending->ping_to_pong ();
 	    forward (pending);
 	  } else { // forward it
 	    if (chain_buffers_pending.chain_first () && !chain_buffers_spare.chain_first ()) { // if other pending (not possible if total spares == 1), but no spares, then drop it
@@ -312,7 +312,7 @@ void IP_Manager::tick () {
 	  }
 	  break;
 
-	case IP_Header::hs_EchoReply:
+	case IP_Buffer::hs_EchoReply:
 	  DEBUG_PRINT("IP_Manager::tick: Echo Reply\n");
 	  register_source (pending->channel (), pending->ip().source ());
 
@@ -323,7 +323,7 @@ void IP_Manager::tick () {
 	  }
 	  break;
 
-	case IP_Header::hs_Protocol_Unsupported:
+	case IP_Buffer::hs_Protocol_Unsupported:
 	  DEBUG_PRINT("IP_Manager::tick: Protocol Unsupported\n");
 	  register_source (pending->channel (), pending->ip().source ());
 
@@ -336,17 +336,17 @@ void IP_Manager::tick () {
 
 	  /* Unable to handle this packet; don't handle or even forward it
 	   */
-	case IP_Header::hs_FrameError:
-	case IP_Header::hs_IPv4:
-	case IP_Header::hs_IPv4_FrameError:
-	case IP_Header::hs_IPv4_PacketTooShort:
-	case IP_Header::hs_IPv4_Checksum:
-	case IP_Header::hs_IPv6:
-	case IP_Header::hs_IPv6_FrameError:
-	case IP_Header::hs_IPv6_PacketTooShort:
-	case IP_Header::hs_Protocol_PacketTooShort:
-	case IP_Header::hs_Protocol_FrameError:
-	case IP_Header::hs_Protocol_Checksum:
+	case IP_Buffer::hs_FrameError:
+	case IP_Buffer::hs_IPv4:
+	case IP_Buffer::hs_IPv4_FrameError:
+	case IP_Buffer::hs_IPv4_PacketTooShort:
+	case IP_Buffer::hs_IPv4_Checksum:
+	case IP_Buffer::hs_IPv6:
+	case IP_Buffer::hs_IPv6_FrameError:
+	case IP_Buffer::hs_IPv6_PacketTooShort:
+	case IP_Buffer::hs_Protocol_PacketTooShort:
+	case IP_Buffer::hs_Protocol_FrameError:
+	case IP_Buffer::hs_Protocol_Checksum:
 	  DEBUG_PRINT("IP_Manager::tick: Bad Packet\n");
 	  add_to_spares (pending);
 	  break;
@@ -393,7 +393,18 @@ void IP_Manager::ping (const IP_Address & address) {
       return; // can't do anything right now
     }
 
-    // ...
+    spare->channel (0);
+    spare->defaults (p_ICMP);
+
+    spare->ip().source() = host;
+    spare->ip().destination() = address;
+
+    spare->icmp().type()    = spare->ip().protocol_echo_request ();
+    spare->icmp().id()      = 73;              // random
+    spare->icmp().seq_no()  = 37;              // random
+    spare->icmp().payload() = milliseconds (); // random
+
+    // TODO: spare->finalise () ?? // FIXME - set lengths & checksums
     
     chain_buffers_pending.chain_push (spare, true /* FIFO */);
 }

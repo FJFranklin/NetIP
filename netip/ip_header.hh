@@ -24,60 +24,6 @@
 #ifndef __ip_header_hh__
 #define __ip_header_hh__
 
-#include "ip_address.hh"
-#include "ip_buffer.hh"
-
-class IP_Header {
-public:
-  enum Protocol {
-#if IP_USE_IPv6
-    p_ICMP = 0x3A,  // IPv6-ICMP
-#else
-    p_ICMP = 0x01,  // Internet Control Message Protocol
-#endif
-    p_TCP  = 0x06,
-    p_UDP  = 0x11
-  };
-
-  /* IP header - we support one or the other, not both
-   */
-#if IP_USE_IPv6
-    struct IP_Header_IPv6 ip;
-#else
-    struct IP_Header_IPv4 ip;
-#endif
-
-  /* Protocol-specific fields
-   */
-  union {
-    struct IP_Header_TCP  tcp;
-    struct IP_Header_UDP  udp;
-    struct IP_Header_ICMP icmp;
-  } proto;
-
-  enum HeaderSniff {
-    hs_Okay = 0,
-    hs_FrameError,
-    hs_EchoRequest,
-    hs_EchoReply,
-    hs_IPv4,
-    hs_IPv4_FrameError,
-    hs_IPv4_PacketTooShort,
-    hs_IPv4_Checksum,
-    hs_IPv6,
-    hs_IPv6_FrameError,
-    hs_IPv6_PacketTooShort,
-    hs_Protocol_Unsupported,
-    hs_Protocol_FrameError,
-    hs_Protocol_PacketTooShort,
-    hs_Protocol_Checksum
-  };
-
-  static HeaderSniff sniff (const IP_Buffer & buffer);
-
-  static void ping_to_pong (IP_Buffer & buffer);
-
-  void defaults (Protocol p);
-};
+xxxx
 
 #endif /* ! __ip_header_hh__ */

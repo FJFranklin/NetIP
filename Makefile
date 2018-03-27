@@ -4,7 +4,6 @@ ALL_SOURCES=\
 	ip_buffer.cpp \
 	ip_channel.cpp \
 	ip_connection.cpp \
-	ip_header.cpp \
 	ip_manager.cpp \
 	ip_serial.cpp \
 	ip_timer.cpp \
@@ -16,7 +15,6 @@ ALL_OBJECTS=\
 	ip_buffer.o \
 	ip_channel.o \
 	ip_connection.o \
-	ip_header.o \
 	ip_manager.o \
 	ip_serial.o \
 	ip_timer.o \
@@ -30,7 +28,6 @@ ALL_HEADERS=\
 	netip/ip_config.hh \
 	netip/ip_connection.hh \
 	netip/ip_defines.hh \
-	netip/ip_header.hh \
 	netip/ip_manager.hh \
 	netip/ip_protocol.hh \
 	netip/ip_serial.hh \

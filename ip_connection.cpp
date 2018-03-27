@@ -23,11 +23,11 @@
 
 #include "netip/ip_manager.hh"
 
-void IP_Connection::reset (IP_Header::Protocol p, u16_t port) {
+void IP_Connection::reset (IP_Protocol p, u16_t port) {
   flags = 0;
-
-  header.defaults (p);
 #if 0
+  header.defaults (p);
+
   if (port) {
     flags |= IP_Connection_LocalSpecified;
     header.port_source = port;

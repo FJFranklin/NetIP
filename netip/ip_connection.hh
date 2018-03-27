@@ -24,14 +24,13 @@
 #ifndef __ip_connection_hh__
 #define __ip_connection_hh__
 
-#include "ip_header.hh"
+#include "ip_buffer.hh"
 #include "ip_timer.hh"
 
 class IP_Channel;
 
 class IP_Connection : public Link, public IP_TimerClient {
 private:
-  IP_Header    header;
   IP_Timer     timer;
 
   IP_Buffer * buffer_in;
@@ -45,6 +44,22 @@ private:
 
   u8_t fifo_write_buffer[IP_Connection_FIFO];
   FIFO fifo_write;
+
+  /* IP header - we support one or the other, not both
+   */
+#if IP_USE_IPv6
+    struct IP_Header_IPv6 ip;
+#else
+    struct IP_Header_IPv4 ip;
+#endif
+
+  /* Protocol-specific fields
+   */
+  union {
+    struct IP_Header_TCP  tcp;
+    struct IP_Header_UDP  udp;
+    struct IP_Header_ICMP icmp;
+  } proto;
 
   struct {
     ns32_t rcv_nxt;     /**< The sequence number that we expect to receive next. */
@@ -79,11 +94,11 @@ public:
 
   /* Note: reset() closes the connection and doesn't open the new one.
    */
-  void reset (IP_Header::Protocol p = IP_Header::p_TCP, u16_t port = 0); // port 0 => find an unused port in range 4096-32000
+  void reset (IP_Protocol p = p_TCP, u16_t port = 0); // port 0 => find an unused port in range 4096-32000
 
   /* Note: A new connection is created, but not opened.
    */
-  IP_Connection (IP_Header::Protocol p = IP_Header::p_TCP, u16_t port = 0) :
+  IP_Connection (IP_Protocol p = p_TCP, u16_t port = 0) :
     timer(this),
     buffer_in(0),
     buffer_out(0),

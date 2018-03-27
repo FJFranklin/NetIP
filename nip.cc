@@ -49,51 +49,50 @@ public:
     IP_Buffer B;
     B.append (buffer, length);
 
-    IP_Header H;
-    switch (IP_Header::sniff (B)) {
-    case IP_Header::hs_Okay:
+    switch (B.sniff ()) {
+    case IP_Buffer::hs_Okay:
       fputs ("hs_Okay\n", stderr);
       break;
-    case IP_Header::hs_FrameError:
+    case IP_Buffer::hs_FrameError:
       fputs ("hs_FrameError\n", stderr);
       break;
-    case IP_Header::hs_EchoRequest:
+    case IP_Buffer::hs_EchoRequest:
       fputs ("hs_EchoRequest\n", stderr);
       break;
-    case IP_Header::hs_EchoReply:
+    case IP_Buffer::hs_EchoReply:
       fputs ("hs_EchoReply\n", stderr);
       break;
-    case IP_Header::hs_IPv4:
+    case IP_Buffer::hs_IPv4:
       fputs ("hs_IPv4\n", stderr);
       break;
-    case IP_Header::hs_IPv4_FrameError:
+    case IP_Buffer::hs_IPv4_FrameError:
       fputs ("hs_IPv4_FrameError\n", stderr);
       break;
-    case IP_Header::hs_IPv4_PacketTooShort:
+    case IP_Buffer::hs_IPv4_PacketTooShort:
       fputs ("hs_IPv4_PacketTooShort\n", stderr);
       break;
-    case IP_Header::hs_IPv4_Checksum:
+    case IP_Buffer::hs_IPv4_Checksum:
       fputs ("hs_IPv4_Checksum\n", stderr);
       break;
-    case IP_Header::hs_IPv6:
+    case IP_Buffer::hs_IPv6:
       fputs ("hs_IPv6\n", stderr);
       break;
-    case IP_Header::hs_IPv6_FrameError:
+    case IP_Buffer::hs_IPv6_FrameError:
       fputs ("hs_IPv6_FrameError\n", stderr);
       break;
-    case IP_Header::hs_IPv6_PacketTooShort:
+    case IP_Buffer::hs_IPv6_PacketTooShort:
       fputs ("hs_IPv6_PacketTooShort\n", stderr);
       break;
-    case IP_Header::hs_Protocol_Unsupported:
+    case IP_Buffer::hs_Protocol_Unsupported:
       fputs ("hs_Protocol_Unsupported\n", stderr);
       break;
-    case IP_Header::hs_Protocol_FrameError:
+    case IP_Buffer::hs_Protocol_FrameError:
       fputs ("hs_Protocol_FrameError\n", stderr);
       break;
-    case IP_Header::hs_Protocol_PacketTooShort:
+    case IP_Buffer::hs_Protocol_PacketTooShort:
       fputs ("hs_Protocol_PacketTooShort\n", stderr);
       break;
-    case IP_Header::hs_Protocol_Checksum:
+    case IP_Buffer::hs_Protocol_Checksum:
       fputs ("hs_Protocol_Checksum\n", stderr);
       break;
     }

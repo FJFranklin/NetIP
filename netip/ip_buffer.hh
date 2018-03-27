@@ -103,6 +103,51 @@ public:
     return *((const struct IP_Header_ICMP *) (buffer + protocol_offset ()));
   }
 
+  void defaults (IP_Protocol p) {
+    ip().defaults ();
+    ip().protocol() = (u8_t) p;
+
+    buffer_used = ip().header_length ();
+
+    switch (p) {
+    case p_TCP:
+      tcp().defaults ();
+      buffer_used += tcp().header_length ();
+      break;
+
+    case p_UDP:
+      udp().defaults ();
+      buffer_used += udp().header_length ();
+      break;
+
+    case p_ICMP:
+      icmp().defaults ();
+      buffer_used += icmp().header_length ();
+      break;
+    }
+  }
+
+  enum HeaderSniff {
+    hs_Okay = 0,
+    hs_FrameError,
+    hs_EchoRequest,
+    hs_EchoReply,
+    hs_IPv4,
+    hs_IPv4_FrameError,
+    hs_IPv4_PacketTooShort,
+    hs_IPv4_Checksum,
+    hs_IPv6,
+    hs_IPv6_FrameError,
+    hs_IPv6_PacketTooShort,
+    hs_Protocol_Unsupported,
+    hs_Protocol_FrameError,
+    hs_Protocol_PacketTooShort,
+    hs_Protocol_Checksum
+  };
+
+  HeaderSniff sniff () const;
+
+  void ping_to_pong ();
 };
 
 #endif /* ! __ip_buffer_hh__ */

@@ -26,6 +26,16 @@
 
 #include "ip_address.hh"
 
+enum IP_Protocol {
+#if IP_USE_IPv6
+  p_ICMP = 0x3A,  // IPv6-ICMP
+#else
+  p_ICMP = 0x01,  // Internet Control Message Protocol
+#endif
+  p_TCP  = 0x06,
+  p_UDP  = 0x11
+};
+
 struct IP_Header_IPv4 {
   u8_t buffer[20]; // there may be upto 10 extra header fields, but the first 20 bytes are required
 
@@ -157,6 +167,9 @@ struct IP_Header_IPv4 {
     return get_IHL () << 2;
   }
 
+  inline void set_total_length (u16_t total) {
+    length() = total;
+  }
   inline u16_t total_length () const {
     return length ();
   }
@@ -304,6 +317,9 @@ struct IP_Header_IPv6 {
     return 40;
   }
 
+  inline void set_total_length (u16_t total) {
+    length() = (total > 40) ? (total - 40) : 0;
+  }
   inline u16_t total_length () const {
     u16_t payload = length ();
     return payload + 40;
@@ -679,6 +695,10 @@ struct IP_Header_ICMP { // currently we only really support echo request, which 
 
   /* utility methods
    */
+
+  inline u8_t header_length () const {
+    return 12;
+  }
 
   inline void defaults () {
     clear ();
