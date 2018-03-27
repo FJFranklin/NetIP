@@ -147,7 +147,13 @@ public:
 
   HeaderSniff sniff () const;
 
+private:
+  void icmp_finalise ();
+public:
+  void ping (const IP_Address & destination);
   void ping_to_pong ();
+
+  void print () const;
 };
 
 #endif /* ! __ip_buffer_hh__ */

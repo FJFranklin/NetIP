@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <termios.h>
 
 IP_SerialChannel::IP_SerialChannel (const char * device_name) :
   device_fd(-1)
@@ -37,7 +38,27 @@ IP_SerialChannel::IP_SerialChannel (const char * device_name) :
     fprintf (stderr, "Failed to open \"%s\" - exiting.\n", device_name);
     return;
   }
-  // ...
+
+  struct termios options;
+
+  tcgetattr (device_fd, &options);
+
+  options.c_cflag = CS8 | CLOCAL | CREAD;
+  options.c_iflag = IGNPAR;
+  options.c_oflag = 0;
+  options.c_lflag = 0;
+
+  cfsetispeed (&options, B115200);
+  cfsetospeed (&options, B115200);
+
+  tcflush (device_fd, TCIFLUSH);
+  tcsetattr (device_fd, TCSANOW, &options);
+
+  u8_t byte;
+
+  while (read (device_fd, &byte, 1) > 0) {
+    // empty the input buffer
+  }
 }
 
 IP_SerialChannel::~IP_SerialChannel () {
@@ -73,7 +94,6 @@ void IP_SerialChannel::update () {
 
   while (slip_can_receive ()) {
     count = read (device_fd, &byte, 1);
-
     if (count < 0) {
       if (errno == EAGAIN) {
 	break;
@@ -84,7 +104,7 @@ void IP_SerialChannel::update () {
     } else if (count == 0) {
       break;
     }
-
+    fprintf (stderr, "{%02x}", (unsigned) byte);
     slip_receive (byte);
   }
 }

@@ -59,7 +59,7 @@
 /* parameters affecting memory use
  */
 #define IP_Buffer_WordCount  64   // buffer size in (2-byte) words; one included per channel - affects TCP/IP data size
-#define IP_Buffer_Extras      1   // how many extra buffers (1 minimum) to use to increase flexibility and responsiveness
+#define IP_Buffer_Extras      4   // how many extra buffers (1 minimum) to use to increase flexibility and responsiveness
 #define IP_Connection_FIFO   32   // size of FIFO in bytes per connection
 
 #endif /* ! __ip_config_hh__ */

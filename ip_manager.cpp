@@ -298,6 +298,7 @@ void IP_Manager::tick () {
 
 	case IP_Buffer::hs_EchoRequest:
 	  DEBUG_PRINT("IP_Manager::tick: Echo Request\n");
+	  // pending->print ();
 	  register_source (pending->channel (), pending->ip().source ());
 
 	  if (pending->ip().destination () == host) { // it's for us; we don't respond to broadcast pings
@@ -375,6 +376,7 @@ void IP_Manager::every_second () {
 }
 
 bool IP_Manager::timeout () {
+  DEBUG_PRINT ("IP_Manager::timeout\n");
   if (ping_interval == 1) {
     ping_interval = 1000 + 4 * (u16_t) host.local_network_id (); // set interval between 1 & 2 seconds
     timer.start (*this, ping_interval);
@@ -387,24 +389,16 @@ bool IP_Manager::timeout () {
 }
 
 void IP_Manager::ping (const IP_Address & address) {
-    IP_Buffer * spare = chain_buffers_spare.chain_pop ();
+  DEBUG_PRINT ("IP_Manager::ping\n");
+  IP_Buffer * spare = chain_buffers_spare.chain_pop ();
 
-    if (!spare) {
-      return; // can't do anything right now
-    }
+  if (!spare) {
+    DEBUG_PRINT ("IP_Manager::ping: no spare\n");
+    return; // can't do anything right now
+  }
 
-    spare->channel (0);
-    spare->defaults (p_ICMP);
-
-    spare->ip().source() = host;
-    spare->ip().destination() = address;
-
-    spare->icmp().type()    = spare->ip().protocol_echo_request ();
-    spare->icmp().id()      = 73;              // random
-    spare->icmp().seq_no()  = 37;              // random
-    spare->icmp().payload() = milliseconds (); // random
-
-    // TODO: spare->finalise () ?? // FIXME - set lengths & checksums
-    
-    chain_buffers_pending.chain_push (spare, true /* FIFO */);
+  spare->channel (0);
+  spare->ping (address);
+  // spare->print ();
+  forward (spare);
 }

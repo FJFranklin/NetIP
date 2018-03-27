@@ -84,9 +84,11 @@ bool IP_Channel::slip_can_receive () {
     buffer_in->channel (channel_number); // note the buffer's originating channel
 
     if (IP_Manager::manager().queue (buffer_in)) {
+      DEBUG_PRINT ("IP_Channel::slip_can_receive: IP_SLIP_READ_COMPLETE: okay!\n");
       slip_read_flags = 0;
       buffer_in->clear (); // this is now actually a different buffer
     } else {
+      DEBUG_PRINT ("*");
       return false; // oops, need to hang onto the buffer
     }
   }
@@ -146,7 +148,11 @@ void IP_Channel::slip_receive (u8_t byte) {
   }
 
   if (bAddByte) {
-    // TODO
+    if (buffer_in->available ()) {
+      buffer_in->append (&byte, 1);
+    } else {
+      slip_read_flags = IP_SLIP_READ_ERROR;
+    }
   }
   if (bPacketComplete) {
     if (IP_Manager::manager().queue (buffer_in)) {

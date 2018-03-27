@@ -102,7 +102,7 @@ public:
     fprintf (stderr, "tick...\n");
 
     if (number < test_count) {
-      test (tests[number].info, tests[number].data, tests[number].size);
+      // test (tests[number].info, tests[number].data, tests[number].size);
       ++number;
     } else {
       IP_Manager::manager().stop ();
@@ -115,14 +115,31 @@ void interrupt (int /* dummy */) {
   IP_Manager::manager().stop ();
 }
 
-int main (int /* argc */, char ** /* argv */) {
+int main (int argc, char ** argv) {
+  const char * device = "/dev/ttyACM0";
+
+  for (int arg = 1; arg < argc; arg++) {
+    if (strcmp (argv[arg], "--help") == 0) {
+      fprintf (stderr, "\nnip [--help] [/dev/<ID>]\n\n");
+      fprintf (stderr, "  --help     Display this help.\n");
+      fprintf (stderr, "  /dev/<ID>  Connect to /dev/<ID> instead of default [/dev/ttyACM0].\n\n");
+      return 0;
+    }
+    if (strncmp (argv[arg], "/dev/", 5) == 0) {
+      device = argv[arg];
+    } else {
+      fprintf (stderr, "nip [--help] [/dev/<ID>]\n");
+      return -1;
+    }
+  }
+
   signal (SIGINT, interrupt);
 
   Uino uino;
 
   IP_Manager & IP = IP_Manager::manager ();
   
-  IP_SerialChannel ser0("/dev/ttyACM0");
+  IP_SerialChannel ser0(device);
   IP.channel_add (&ser0);
 
   IP_Connection con;

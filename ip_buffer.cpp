@@ -27,6 +27,7 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
   /* quick version check before we proceed
    */
   if (!length ()) { // empty buffer
+    DEBUG_PRINT ("IP_Buffer::sniff: hs_FrameError\n");
     return hs_FrameError;  // sort-of - shouldn't happen
   }
 
@@ -40,8 +41,10 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
   u16_t payload_offset;
   u16_t payload_length;
 
-#if IP_USE_IPv6
+  DEBUG_PRINT ("IP_Buffer::sniff\n");
 
+#if IP_USE_IPv6
+  DEBUG_PRINT ("IP_Buffer::sniff: IPv6\n");
   if (version == 4) {
     return hs_IPv4;
   }
@@ -58,7 +61,7 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
   payload_length = ip().length ();
 
 #else // IP_USE_IPv6
-
+  DEBUG_PRINT ("IP_Buffer::sniff: IPv4\n");
   if (version == 6) {
     return hs_IPv6;
   }
@@ -99,10 +102,13 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
   /* Protocol
    */
   if (ip().is_ICMP ()) {
+    DEBUG_PRINT ("IP_Buffer::sniff: ICMP\n");
     if (payload_length < 8) { // minimum size of ICMP header
+      DEBUG_PRINT ("IP_Buffer::sniff: ICMP: Too Short\n");
       return hs_Protocol_PacketTooShort;
     }
     if (payload_length < 12) { // minimum size of ICMP header that we expect
+      DEBUG_PRINT ("IP_Buffer::sniff: ICMP: Unsupported\n");
       return hs_Protocol_Unsupported;
     }
 
@@ -125,14 +131,17 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
       checksum_calc = check.checksum ();
 
       if (checksum_sent != checksum_calc) {
+	DEBUG_PRINT ("IP_Buffer::sniff: ICMP: Checksum\n");
 	return hs_Protocol_Checksum;
       }
       return (icmp().type () == ip().protocol_echo_request ()) ? hs_EchoRequest : hs_EchoReply;
     }
+    DEBUG_PRINT ("IP_Buffer::sniff: ICMP: Unsupported (not ping/pong)\n");
     return hs_Protocol_Unsupported;
   }
 
   if (ip().is_TCP ()) {
+    DEBUG_PRINT ("IP_Buffer::sniff: TCP\n");
     if (payload_length < 20) { // minimum size of TCP header
       return hs_Protocol_PacketTooShort;
     }
@@ -165,6 +174,7 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
   }
 
   if (ip().is_UDP ()) {
+    DEBUG_PRINT ("IP_Buffer::sniff: UDP\n");
     if (payload_length < 8) { // minimum size of UDP header
       return hs_Protocol_PacketTooShort;
     }
@@ -192,27 +202,67 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
   return hs_Protocol_Unsupported;
 }
 
-void IP_Buffer::ping_to_pong () { // we do this in-place, i.e., convert in incoming request buffer to an outgoing reply buffer
-  ip().destination() = ip().source ();
-  ip().source() = IP_Manager::manager().host;
-
+void IP_Buffer::icmp_finalise () {
   Check16 check;
 
-#if IP_USE_IPv6
-  ip().pseudo_header (check);
-#else
-  ip().header (check);
-  ip().checksum() = check.checksum ();
-#endif
+  if (ip().is_IPv6 ()) {
+    ip().pseudo_header (check);
+  } else {
+    ip().header (check);
+    ip().checksum() = check.checksum ();
+    check.clear ();
+  }
 
   u16_t payload_offset = ip().header_length ();
   u16_t payload_length = ip().payload_length ();
 
-  icmp().type() = ip().protocol_echo_reply ();
   icmp().header (check);
 
   if (payload_length > 12) {
     check_16 (check, payload_offset + 12);
   }
   icmp().checksum() = check.checksum ();
+}
+
+void IP_Buffer::ping (const IP_Address & address) {
+  defaults (p_ICMP);
+
+  ip().source() = IP_Manager::manager().host;
+  ip().destination() = address;
+  ip().set_total_length (length ());
+
+  icmp().type() = ip().protocol_echo_request ();
+
+  /* These next fields are fairly arbitrary.
+   */
+  icmp().id()      = 0x73;
+  icmp().seq_no()  = 0x37;
+  icmp().payload() = IP_Manager::manager().milliseconds ();
+
+  icmp_finalise ();
+}
+
+void IP_Buffer::ping_to_pong () { // we do this in-place, i.e., convert in incoming request buffer to an outgoing reply buffer
+  ip().destination() = ip().source ();
+  ip().source() = IP_Manager::manager().host;
+
+  icmp().type() = ip().protocol_echo_reply ();
+
+  icmp_finalise ();
+}
+
+void IP_Buffer::print () const {
+#if IP_ARCH_UNIX
+  u16_t b = 0;
+  while (b != length ()) {
+    if (b && !(b & 0x000F)) {
+      fputs ("\n", stderr);
+    }
+    if (!(b & 0x0003)) {
+      fputs (" ", stderr);
+    }
+    fprintf (stderr, "%02x,", (unsigned) buffer[b++]);
+  }
+  fputs ("\n", stderr);
+#endif
 }
