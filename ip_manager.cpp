@@ -138,13 +138,19 @@ void IP_Manager::broadcast (IP_Buffer * buffer) {
   DEBUG_PRINT("IP_Manager::broadcast\n");
   u8_t channel_origin = buffer->channel ();
 
+  bool bEndOfLine = true;
+
   Chain<IP_Channel>::iterator I = chain_channel.begin ();
 
   while (*I) {
     if ((*I)->number () != channel_origin) { // don't send it backwards
       (*I)->send (buffer);
+      bEndOfLine = false;
     }
     ++I;
+  }
+  if (bEndOfLine) {
+    add_to_spares (buffer);
   }
 }
 

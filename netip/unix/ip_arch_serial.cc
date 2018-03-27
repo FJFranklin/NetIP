@@ -104,7 +104,6 @@ void IP_SerialChannel::update () {
     } else if (count == 0) {
       break;
     }
-    fprintf (stderr, "{%02x}", (unsigned) byte);
     slip_receive (byte);
   }
 }

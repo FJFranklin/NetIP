@@ -81,8 +81,6 @@ bool IP_Channel::slip_next_to_send (const u8_t *& byte, u8_t & flags) { // retur
 
 bool IP_Channel::slip_can_receive () {
   if (slip_read_flags == IP_SLIP_READ_COMPLETE) {
-    buffer_in->channel (channel_number); // note the buffer's originating channel
-
     if (IP_Manager::manager().queue (buffer_in)) {
       DEBUG_PRINT ("IP_Channel::slip_can_receive: IP_SLIP_READ_COMPLETE: okay!\n");
       slip_read_flags = 0;
@@ -155,6 +153,8 @@ void IP_Channel::slip_receive (u8_t byte) {
     }
   }
   if (bPacketComplete) {
+    buffer_in->channel (channel_number); // note the buffer's originating channel
+
     if (IP_Manager::manager().queue (buffer_in)) {
       slip_read_flags = 0;
       buffer_in->clear ();
