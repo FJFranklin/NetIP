@@ -33,6 +33,8 @@ IP_Manager & IP_Manager::manager () {
  * Use IP_Manager::manager() to get the global instance
  */
 IP_Manager::IP_Manager () :
+  timer(this),
+  ping_interval(1),
   last_port(4096),
   host(IP_Address_DefaultHost),
   gateway(IP_Address_DefaultGateway),
@@ -42,6 +44,8 @@ IP_Manager::IP_Manager () :
   for (int i = 0; i < IP_Buffer_Extras; i++) {
     chain_buffers_spare.chain_prepend (buffers + i);
   }
+
+  timer.start (*this, ping_interval); // we'll adjust this later
 }
 
 IP_Connection * IP_Manager::connection_for_port (const ns16_t & port) {
@@ -130,12 +134,31 @@ bool IP_Manager::queue (IP_Buffer *& buffer) {
   return bQueued;
 }
 
+void IP_Manager::broadcast (IP_Buffer * buffer) {
+  DEBUG_PRINT("IP_Manager::broadcast\n");
+  u8_t channel_origin = buffer->channel ();
+
+  Chain<IP_Channel>::iterator I = chain_channel.begin ();
+
+  while (*I) {
+    if ((*I)->number () != channel_origin) { // don't send it backwards
+      (*I)->send (buffer);
+    }
+    ++I;
+  }
+}
+
 void IP_Manager::forward (IP_Buffer * buffer) {
+  DEBUG_PRINT("IP_Manager::forward\n");
   u8_t channel_number;
 
   IP_Channel * ch = 0;
 
   switch (channel_for_destination (channel_number, buffer->ip().destination ())) {
+
+  case ri_Destination_Self:   // that's us!
+    chain_buffers_pending.chain_push (buffer, true /* FIFO */);
+    break;
 
   case ri_Destination_Local:  // route through local network to final destination
   case ri_Gateway_Local:      // route through local network to gateway
@@ -147,8 +170,8 @@ void IP_Manager::forward (IP_Buffer * buffer) {
     }
     break;
 
-  case ri_Destination_Self:   // that's us!
-    queue (buffer);
+  case ri_Broadcast_Local:
+    broadcast (buffer);
     break;
 
   case ri_Gateway_Self:       // we're the gateway - route to external network
@@ -157,31 +180,6 @@ void IP_Manager::forward (IP_Buffer * buffer) {
   case ri_InvalidAddress:     // reserved network address, or channel not registered
     add_to_spares (buffer);
     break;
-  }
-}
-
-void IP_Manager::register_source (u8_t channel, const IP_Address & source) {
-  if (channel > 0x0F) { // allowed a maximum of 15 external channels; and 0 = self
-    return;
-  }
-  if (!is_local_network (source)) {
-    return;
-  }
-
-  u8_t id = source.local_network_id ();
-
-  if ((id == 0 /* reserved as a network identifier */) || (id == 255 /* reserved for broadcasts */)) {
-    return;
-  }
-
-  if ((--id) & 1) {
-    id >>= 1;
-    channel_register[id] &= 0xF0;
-    channel_register[id] |= channel;
-  } else {
-    id >>= 1;
-    channel_register[id] &= 0x0F;
-    channel_register[id] |= (channel << 4);
   }
 }
 
@@ -196,6 +194,9 @@ IP_Manager::RoutingInfo IP_Manager::channel_for_destination (u8_t & channel, con
     if (id == host.local_network_id ()) {
       channel = 0;
       return ri_Destination_Self;
+    }
+    if (id == 255 /* reserved for broadcasts */) {
+      return ri_Broadcast_Local;
     }
     ri = ri_Destination_Local;
   } else {
@@ -224,6 +225,31 @@ IP_Manager::RoutingInfo IP_Manager::channel_for_destination (u8_t & channel, con
     return ri_InvalidAddress;
   }
   return ri;
+}
+
+void IP_Manager::register_source (u8_t channel, const IP_Address & source) {
+  if (channel > 0x0F) { // allowed a maximum of 15 external channels; and 0 = self
+    return;
+  }
+  if (!is_local_network (source)) {
+    return;
+  }
+
+  u8_t id = source.local_network_id ();
+
+  if ((id == 0 /* reserved as a network identifier */) || (id == 255 /* reserved for broadcasts */)) {
+    return;
+  }
+
+  if ((--id) & 1) {
+    id >>= 1;
+    channel_register[id] &= 0xF0;
+    channel_register[id] |= channel;
+  } else {
+    id >>= 1;
+    channel_register[id] &= 0x0F;
+    channel_register[id] |= (channel << 4);
+  }
 }
 
 void IP_Manager::tick () {
@@ -256,9 +282,11 @@ void IP_Manager::tick () {
       IP_Buffer * pending = chain_buffers_pending.chain_pop ();
 
       if (pending) {
+	DEBUG_PRINT("IP_Manager::tick: pending\n");
 	switch (IP_Header::sniff (*pending)) {
 
 	case IP_Header::hs_Okay:
+	  DEBUG_PRINT("IP_Manager::tick: pending: Okay\n");
 	  register_source (pending->channel (), pending->ip().source ());
 
 	  if (pending->ip().destination () == host) { // it's for us
@@ -269,14 +297,15 @@ void IP_Manager::tick () {
 	  break;
 
 	case IP_Header::hs_EchoRequest:
+	  DEBUG_PRINT("IP_Manager::tick: Echo Request\n");
 	  register_source (pending->channel (), pending->ip().source ());
 
 	  if (pending->ip().destination () == host) { // it's for us; we don't respond to broadcast pings
 	    IP_Header::ping_to_pong (*pending);
 	    forward (pending);
 	  } else { // forward it
-	    if (!chain_buffers_spare.chain_first ()) { // check if there is a spare - affects priorities
-	      add_to_spares (pending);                 // drop it; more important to have spare buffers than broadcast packets (trying to avoid storms)
+	    if (chain_buffers_pending.chain_first () && !chain_buffers_spare.chain_first ()) { // if other pending (not possible if total spares == 1), but no spares, then drop it
+	      add_to_spares (pending);                                                         // more important to have spare buffers than ping packets (trying to avoid storms)
 	    } else {
 	      forward (pending);
 	    }
@@ -284,6 +313,7 @@ void IP_Manager::tick () {
 	  break;
 
 	case IP_Header::hs_EchoReply:
+	  DEBUG_PRINT("IP_Manager::tick: Echo Reply\n");
 	  register_source (pending->channel (), pending->ip().source ());
 
 	  if (pending->ip().destination () == host) { // it's for us - but we don't (yet) use it
@@ -294,6 +324,7 @@ void IP_Manager::tick () {
 	  break;
 
 	case IP_Header::hs_Protocol_Unsupported:
+	  DEBUG_PRINT("IP_Manager::tick: Protocol Unsupported\n");
 	  register_source (pending->channel (), pending->ip().source ());
 
 	  if (pending->ip().destination () == host) { // it's for us - but we can't use it
@@ -316,6 +347,7 @@ void IP_Manager::tick () {
 	case IP_Header::hs_Protocol_PacketTooShort:
 	case IP_Header::hs_Protocol_FrameError:
 	case IP_Header::hs_Protocol_Checksum:
+	  DEBUG_PRINT("IP_Manager::tick: Bad Packet\n");
 	  add_to_spares (pending);
 	  break;
 	}
@@ -339,5 +371,29 @@ void IP_Manager::every_millisecond () {
 }
 
 void IP_Manager::every_second () {
-  // TODO: broadcast ping - i.e., set a flag to broadcast a ping as and when a spare buffer is available
+  // ...
+}
+
+bool IP_Manager::timeout () {
+  if (ping_interval == 1) {
+    ping_interval = 1000 + 4 * (u16_t) host.local_network_id (); // set interval between 1 & 2 seconds
+    timer.start (*this, ping_interval);
+  } else {
+    IP_Address B = host;
+    B.set_local_network_id (255);
+    ping (B);
+  }
+  return true; // keep running
+}
+
+void IP_Manager::ping (const IP_Address & address) {
+    IP_Buffer * spare = chain_buffers_spare.chain_pop ();
+
+    if (!spare) {
+      return; // can't do anything right now
+    }
+
+    // ...
+    
+    chain_buffers_pending.chain_push (spare, true /* FIFO */);
 }

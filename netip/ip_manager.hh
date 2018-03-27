@@ -30,7 +30,7 @@
 
 class IP_UDP_Connection;
 
-class IP_Manager : public IP_Clock {
+class IP_Manager : public IP_Clock, public IP_TimerClient {
 private:
   u8_t channel_register[127];
 
@@ -41,6 +41,9 @@ private:
 
   Chain<IP_Connection> chain_connection; // IP connections across network
   Chain<IP_Channel>    chain_channel;    // Hardware connections to neighbouring devices
+
+  IP_Timer timer;         // timer for broadcast ping
+  u16_t    ping_interval; // how often to broadcast ping on local network
 
   u16_t  last_port; // counter for generating free port numbers
 
@@ -97,17 +100,21 @@ public:
     chain_buffers_spare.chain_prepend (buffer);
   }
 
+  void ping (const IP_Address & address);
+
 private:
   void connection_handover (IP_Buffer * buffer);
 
   enum RoutingInfo {
     ri_InvalidAddress = 0, // reserved network address, or channel not registered
+    ri_Broadcast_Local,    // local network broadcast    
     ri_Destination_Self,   // that's us!
     ri_Destination_Local,  // route through local network to final destination
     ri_Gateway_Self,       // we're the gateway - route to external network
     ri_Gateway_Local       // route through local network to gateway
   };
 
+  void broadcast (IP_Buffer * buffer);
   void forward (IP_Buffer * buffer);
   void register_source (u8_t channel, const IP_Address & source);
 
@@ -118,6 +125,8 @@ private:
   void tick ();
   void every_millisecond ();
   void every_second ();
+
+  virtual bool timeout (); // return true if the timer should be reset & retained
 };
 
 #endif /* ! __ip_manager_hh__ */

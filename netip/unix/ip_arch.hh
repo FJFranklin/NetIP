@@ -34,7 +34,7 @@ typedef unsigned long  u32_t;
 
 #if IP_DEBUG
 #include <cstdio>
-#define DEBUG_PRINT(x) fprintf (stderr, x)
+#define DEBUG_PRINT(x) fputs (x, stderr)
 #else
 #define DEBUG_PRINT(x) while (false)
 #endif

@@ -28,8 +28,6 @@
  */
 #define IP_USE_IPv6 0
 
-#define IP_DEBUG    1
-
 /* Architecture build options
  */
 #ifndef IP_ARCH_UNIX
@@ -38,9 +36,11 @@
 #endif
 
 #if IP_ARCH_UNIX
+#define IP_DEBUG    1
 #include "unix/ip_arch.hh"
 #endif
 #if IP_ARCH_ARDUINO
+#define IP_DEBUG    0
 #include "arduino/ip_arch.hh"
 #endif
 
@@ -52,7 +52,7 @@
 #define IP_Address_DefaultNetmask 0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xff00
 #else
 #define IP_Address_DefaultHost    192,168,  5,  1
-#define IP_Address_DefaultGateway 192,168,  5,254 // .255 should be broadcast; .0 reserved as a network identifier;
+#define IP_Address_DefaultGateway 192,168,  5,  1 // .255 should be broadcast; .0 reserved as a network identifier;
 #define IP_Address_DefaultNetmask 255,255,255,  0
 #endif
 

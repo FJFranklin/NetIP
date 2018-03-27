@@ -147,6 +147,10 @@ public:
     // ...
   }
 
+  inline void set_local_network_id (u8_t id) {
+    address[IP_Address_WordCount-1][1] = id; // final byte of address; must be local-network unique in range 1-254
+  }
+
   inline u8_t local_network_id () const {
     return address[IP_Address_WordCount-1][1]; // final byte of address; must be local-network unique
   }
