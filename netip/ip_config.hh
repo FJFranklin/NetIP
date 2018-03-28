@@ -62,4 +62,8 @@
 #define IP_Buffer_Extras      2   // how many extra buffers (1 minimum) to use to increase flexibility and responsiveness
 #define IP_Connection_FIFO   32   // size of FIFO in bytes per connection
 
+/* networking parameters
+ */
+#define IP_TimeToLive        64   // the hop count / time to live of IP packets.
+
 #endif /* ! __ip_config_hh__ */

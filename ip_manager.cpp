@@ -304,7 +304,6 @@ void IP_Manager::tick () {
 
 	case IP_Buffer::hs_EchoRequest:
 	  DEBUG_PRINT("IP_Manager::tick: Echo Request\n");
-	  // pending->print ();
 	  register_source (pending->channel (), pending->ip().source ());
 
 	  if (pending->ip().destination () == host) { // it's for us; we don't respond to broadcast pings
@@ -321,6 +320,7 @@ void IP_Manager::tick () {
 
 	case IP_Buffer::hs_EchoReply:
 	  DEBUG_PRINT("IP_Manager::tick: Echo Reply\n");
+	  // pending->print ();
 	  register_source (pending->channel (), pending->ip().source ());
 
 	  if (pending->ip().destination () == host) { // it's for us - but we don't (yet) use it
@@ -388,7 +388,7 @@ bool IP_Manager::timeout () {
     timer.start (*this, ping_interval);
   } else {
     IP_Address B = host;
-    B.set_local_network_id (255);
+    B.set_local_network_id (255); // broadcast address for local network
     ping (B);
   }
   return true; // keep running

@@ -34,11 +34,6 @@
 #define IP_Header_Length_UDP   8
 #define IP_Header_Length_TCP  20
 
-/* Link-level header, i.e., ethernet framing or SLIP encoding
- */
-#define IP_Header_Length_LLH   0
-#define IP_Trailing_Length     0
-
 /* Different header types for IPv4 & IPv6
  */
 #if IP_USE_IPv6
@@ -54,13 +49,9 @@
 #define IP_Header_UDP_IP       (IP_Header_Length_IP + IP_Header_Length_UDP)
 #define IP_Header_TCP_IP       (IP_Header_Length_IP + IP_Header_Length_TCP)
 
-/* ..., which is framed within ethernet (or SLIP)
- */
-#define IP_Header_TCP_IP_LLH   (IP_Header_TCP_IP + IP_Header_Length_LLH)
-
 /* Maximum data length for TCP/IP connections
  */
-#define IP_TCP_MaxSegmentSize  (IP_Buffer_SafeSize - IP_Header_TCP_IP_LLH - IP_Trailing_Length)
+#define IP_TCP_MaxSegmentSize  (IP_Buffer_SafeSize - IP_Header_TCP_IP)
 
 /*
  * ======== uIP definitions ========
@@ -85,13 +76,6 @@
  *
  * This should not be changed.
  */
-#define UIP_RTO                3
-
-/**
- * The IP TTL (time to live) of IP packets sent by uIP.
- *
- * This should normally not be changed.
- */
-#define UIP_TTL               64
+#define UIP_RTO           3
 
 #endif /* ! __ip_defines_hh__ */

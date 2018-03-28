@@ -91,6 +91,9 @@ public:
   inline u16_t write (const u8_t * ptr, u16_t length) {
     return fifo_write.write (ptr, length); // TODO
   }
+  inline u16_t print (const char * str) {
+    return write ((const u8_t *) str, strlen (str));
+  }
 
   /* Note: reset() closes the connection and doesn't open the new one.
    */

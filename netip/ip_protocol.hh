@@ -24,6 +24,7 @@
 #ifndef __ip_protocol_hh__
 #define __ip_protocol_hh__
 
+#include "ip_defines.hh"
 #include "ip_address.hh"
 
 enum IP_Protocol {
@@ -183,7 +184,7 @@ struct IP_Header_IPv4 {
     clear ();
     set_version ();
     set_IHL (5);
-    ttl() = 64;
+    ttl() = IP_TimeToLive;
   }
 
   inline u8_t protocol_echo_request () const {
@@ -332,7 +333,7 @@ struct IP_Header_IPv6 {
   inline void defaults () {
     clear ();
     set_version ();
-    ttl() = 64;
+    ttl() = IP_TimeToLive;
   }
 
   inline u8_t protocol_echo_request () const {

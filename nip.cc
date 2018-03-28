@@ -32,11 +32,19 @@
 
 class Uino : public IP_TimerClient {
 private:
+  u8_t buffer[32];
+
+  IP_Connection * udp;
+
   u8_t number;
 
+  bool bTesting;
+
 public:
-  Uino () :
-    number(0)
+  Uino (IP_Connection * con, bool bTest) :
+    udp(con),
+    number(0),
+    bTesting(bTest)
   {
     // ...
   }
@@ -98,14 +106,27 @@ public:
     }
   }
 
-  virtual bool timeout () { // should be called once a second
-    fprintf (stderr, "tick...\n");
+  virtual bool timeout () {
+    if (bTesting) {
+      if (number < test_count) {
+	test (tests[number].info, tests[number].data, tests[number].size);
+	++number;
+      } else {
+	IP_Manager::manager().stop ();
+      }
+    }
 
-    if (number < test_count) {
-      // test (tests[number].info, tests[number].data, tests[number].size);
-      ++number;
-    } else {
-      IP_Manager::manager().stop ();
+    while (true) {
+      u16_t count = udp->read (buffer, 32);
+
+      if (!count) {
+	break;
+      }
+      fprintf (stderr, "UDP-0xC00C: \"");
+      for (u16_t c = 0; c < count; c++) {
+	fputc (buffer[c], stderr);
+      }
+      fprintf (stderr, "\"\n");
     }
     return true; // keep going
   }
@@ -116,26 +137,29 @@ void interrupt (int /* dummy */) {
 }
 
 int main (int argc, char ** argv) {
+  bool bTesting = false;
+
   const char * device = "/dev/ttyACM0";
 
   for (int arg = 1; arg < argc; arg++) {
     if (strcmp (argv[arg], "--help") == 0) {
-      fprintf (stderr, "\nnip [--help] [/dev/<ID>]\n\n");
+      fprintf (stderr, "\nnip [--help] [--test] [/dev/<ID>]\n\n");
       fprintf (stderr, "  --help     Display this help.\n");
+      fprintf (stderr, "  --test     Sample IP packet testing.\n");
       fprintf (stderr, "  /dev/<ID>  Connect to /dev/<ID> instead of default [/dev/ttyACM0].\n\n");
       return 0;
     }
     if (strncmp (argv[arg], "/dev/", 5) == 0) {
       device = argv[arg];
+    } else if (strcmp (argv[arg], "--test") == 0) {
+      bTesting = true;
     } else {
-      fprintf (stderr, "nip [--help] [/dev/<ID>]\n");
+      fprintf (stderr, "nip [--help] [--test] [/dev/<ID>]\n");
       return -1;
     }
   }
 
   signal (SIGINT, interrupt);
-
-  Uino uino;
 
   IP_Manager & IP = IP_Manager::manager ();
   
@@ -145,8 +169,13 @@ int main (int argc, char ** argv) {
   IP_Connection con;
   IP.connection_add (&con);
 
-  IP_Timer timer(&uino);  // set up a periodic callback
-  timer.start (IP, 1000); // once a second
+  IP_Connection udp(p_UDP, 0xC00C); // just listen; don't connect
+  IP.connection_add (&udp);
+
+  Uino uino(&udp, bTesting);
+
+  IP_Timer timer(&uino); // set up a periodic callback
+  timer.start (IP, 10);  // once every 10 milliseconds
 
   IP.run (); // runs forever
 
