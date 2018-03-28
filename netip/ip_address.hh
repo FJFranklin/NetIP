@@ -56,11 +56,6 @@ public:
     return *this;
   }
 
-  inline IP_Address & operator= (const BufferIterator & I) {
-    memcpy (address, *I, IP_Address_WordCount << 1);
-    return *this;
-  }
-
   inline bool compare (const IP_Address & rhs) const {
     return !memcmp (address, rhs.address, IP_Address_WordCount << 1);
   }

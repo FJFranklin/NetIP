@@ -60,33 +60,35 @@ IP_Connection * IP_Manager::connection_for_port (const ns16_t & port) {
   return *I;
 }
 
-ns16_t IP_Manager::available_port () {
-  ns16_t lp;
-
+u16_t IP_Manager::available_port () {
   while (true) {
-    lp = last_port;
-
-    if (!connection_for_port (lp)) {
+    if (!connection_for_port (ns16_t::convert (last_port))) {
       break;
     }
-    if (++last_port >= 32000) {
-      last_port = 4096;
+    if (last_port == 0xFFFF) {
+      last_port = 0xC000;
+    } else {
+      ++last_port;
     }
   }
-  return lp;
+  return last_port;
 }
 
-void IP_Manager::channel_add (IP_Channel * channel) {
+bool IP_Manager::channel_add (IP_Channel * channel) {
   if (channel) {
     IP_Channel * C = chain_channel.chain_first ();
 
     if (C) {
+      if (C->number () == 15) {
+	return false;
+      }
       channel->set_number (C->number () + 1);
     } else {
       channel->set_number (1); // first channel is #1; reserve 0 for ourself
     }
     chain_channel.chain_prepend (channel);
   }
+  return true;
 }
 
 IP_Channel * IP_Manager::channel (u8_t number) {

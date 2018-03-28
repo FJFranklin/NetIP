@@ -39,8 +39,8 @@ void setup () {
   IP_SerialChannel ser0(Serial);
   IP.channel_add (&ser0);
 
-  IP_Connection udp(p_UDP);
-  udp.connect (IP.gateway, 0xC00C);
+  IP_Connection udp(p_UDP, IP.available_port ());
+  udp.connect (IP.gateway, 0xBCCB); // 48331 (in the range 48130-48555 currently unassigned by IANA)
   IP.connection_add (&udp);
 
   Uino uino(&udp);

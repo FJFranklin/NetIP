@@ -169,7 +169,8 @@ int main (int argc, char ** argv) {
   IP_Connection con;
   IP.connection_add (&con);
 
-  IP_Connection udp(p_UDP, 0xC00C); // just listen; don't connect
+  IP_Connection udp(p_UDP, 0xBCCB);
+  udp.open (); // just listen; don't connect
   IP.connection_add (&udp);
 
   Uino uino(&udp, bTesting);

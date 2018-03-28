@@ -78,7 +78,7 @@ public:
 
   IP_Connection * connection_for_port (const ns16_t & port); // returns 0 if none found
 
-  void channel_add (IP_Channel * channel); // Note: no option to remove channels!
+  bool channel_add (IP_Channel * channel); // Note: add up to 15 channels; no option to remove channels.
 
   IP_Channel * channel (u8_t number);
 
@@ -86,7 +86,7 @@ public:
     return host.compare (address, netmask);
   }
 
-  ns16_t available_port ();
+  u16_t available_port ();
 
   /* 
    * returns false if unable to queue (i.e., if no spare buffer for the exchange)

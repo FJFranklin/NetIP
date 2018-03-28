@@ -24,33 +24,39 @@
 #include "netip/ip_manager.hh"
 
 void IP_Connection::reset (IP_Protocol p, u16_t port) {
-  flags = 0;
-#if 0
-  header.defaults (p);
+  flags = (p == p_TCP) ? IP_Connection_Protocol_TCP : 0;
 
-  if (port) {
-    flags |= IP_Connection_LocalSpecified;
-    header.port_source = port;
-  } else {
-    header.port_source = IP_Manager::manager().available_port ();
-  }
-  // TODO
-#endif
+  port_local = port;
 }
 
-void IP_Connection::open () {
+bool IP_Connection::open () {
   if (flags & IP_Connection_Open) {
-    return;
+    return true;
   }
-  if (flags & (IP_Connection_LocalSpecified | IP_Connection_RemoteSpecified)) {
-    flags |= IP_Connection_Open;
-    // TODO: what else?
-    return;
+
+  if (is_TCP ()) {
+
+    if (port_local) {
+      flags |= IP_Connection_Open;
+      // TODO: what else?
+      return true;
+    }
+    return false;
+
+  } else { // UDP
+
+    if (port_local || has_remote ()) {
+      flags |= IP_Connection_Open;
+      // TODO: what else?
+      return true;
+    }
+    return false;
+
   }
 }
 
 void IP_Connection::close () {
-  flags &= ~IP_Connection_Open;
+  flags &= ~(IP_Connection_Open | IP_Connection_TimeoutSet);
   // TODO: what else?
 }
 
@@ -67,10 +73,57 @@ bool IP_Connection::timeout () { // return true if the timer should be reset & r
 }
 
 bool IP_Connection::accept (IP_Buffer * buffer) {
+  if (!is_open () || is_busy () || !port_local) {
+    return false;
+  }
+
+  if (is_TCP ()) {
+
+    if (!buffer->ip().is_TCP ()) { // incoming stream isn't TCP
+      return false;
+    }
+    if (has_remote ()) { // make sure remote address & port match
+      if (buffer->tcp().destination () != port_local) { // local port mismatch
+	return false;
+      }
+      if (buffer->tcp().source () != port_remote) { // remote port mismatch
+	return false;
+      }
+      if (buffer->ip().source () != remote) { // remote address mismatch
+	return false;
+      }
+      // TODO: what else?
+      IP_Manager::manager().add_to_spares (buffer);
+      return true;
+
+    } else { // need to establish connection
+      // TODO: what else?
+      IP_Manager::manager().add_to_spares (buffer);
+      return true;
+    }
+  } else { // UDP
+
+    if (!buffer->ip().is_UDP ()) { // incoming stream isn't UDP
+      return false;
+    }
+    if (buffer->udp().destination () != port_local) { // local port mismatch
+      return false;
+    }
+    // TODO: what else?
+    IP_Manager::manager().add_to_spares (buffer);
+    return true;
+
+  }
   return false; // FIXME
 }
 
 bool IP_Connection::connect (const IP_Address & address, u16_t port) {
+  if (is_open ()) {
+    return false;
+  }
+
+  if (is_TCP ()) {
+
 #if 0
   if (tcp.tcpstateflags != UIP_CLOSED) {
     return false;
@@ -104,7 +157,22 @@ bool IP_Connection::connect (const IP_Address & address, u16_t port) {
   tcp.rto = UIP_RTO;
   tcp.sa = 0;
   tcp.sv = 16;   /* Initial value of the RTT variance. */
+
+    return true;
 #endif
 
-  return true;
+  } else { // UDP
+
+    if (port) {
+      flags |= IP_Connection_RemoteSpecified;
+
+      remote = address;
+      port_remote = port;
+
+      return open ();
+    }
+    return false;
+
+  }
+  return false;
 }

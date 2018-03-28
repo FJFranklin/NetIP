@@ -26,56 +26,11 @@
 
 #include "ip_config.hh"
 
-class BufferIterator {
-private:
-  const u8_t * ptr;
-  const u8_t * end;
-
-public:
-  BufferIterator (const u8_t * buffer, u16_t length) :
-    ptr(buffer),
-    end(buffer + length)
-  {
-    // ...
-  }
-
-  ~BufferIterator () {
-    // ...
-  }
-
-  inline u16_t remaining () const {
-    return (u16_t) (end - ptr);
-  }
-
-  inline const u8_t * operator* () const {
-    return ptr;
-  }
-
-  inline BufferIterator & operator++ () {
-    ++ptr;
-    return *this;
-  }
-
-  inline BufferIterator & operator+= (u16_t count) {
-    ptr += count;
-
-    if (ptr > end) {
-      ptr = end;
-    }
-    return *this;
-  }
-};
-
 class ns16_t {
 private:
   u8_t byte[2];
 
 public:
-  inline ns16_t & operator= (const BufferIterator & I) {
-    memcpy (byte, *I, 2);
-    return *this;
-  }
-
   inline u8_t & operator[] (int i) {
     return byte[0x01 & (u8_t) i];
   }
@@ -144,11 +99,6 @@ private:
   } u;
 
 public:
-  inline ns32_t & operator= (const BufferIterator & I) {
-    memcpy (u.byte, *I, 4);
-    return *this;
-  }
-
   inline u8_t & operator[] (u8_t i) {
     return u.byte[i & 0x03];
   }
@@ -389,6 +339,10 @@ public:
     data_end   = buffer_start;
   }
 
+  inline bool is_empty () {
+    return (data_start == data_end);
+  }
+
   inline bool push (u8_t byte) {
     bool bCanPush = true;
 
@@ -567,6 +521,22 @@ public:
     if (ptr && length) {
       count = (offset + length <= buffer_used) ? length : (buffer_used - offset);
       memcpy (ptr, buffer + offset, count);
+    }
+    return count;
+  }
+
+  inline u16_t pull (FIFO & fifo) { // append to buffer from FIFO
+    u16_t count = fifo.read (buffer + buffer_used, buffer_max - buffer_used);
+    buffer_used += count;
+    return count;
+  }
+
+  inline u16_t push (FIFO & fifo, u16_t buffer_offset) { // write buffer to FIFO
+    u16_t count = 0;
+
+    if (buffer_offset < buffer_used) {
+      count = fifo.write (buffer + buffer_offset, buffer_used - buffer_offset);
+      buffer_used += count;
     }
     return count;
   }

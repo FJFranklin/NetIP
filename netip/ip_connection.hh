@@ -44,7 +44,7 @@ private:
 
   u8_t fifo_write_buffer[IP_Connection_FIFO];
   FIFO fifo_write;
-
+#if 0
   /* IP header - we support one or the other, not both
    */
 #if IP_USE_IPv6
@@ -76,15 +76,37 @@ private:
     u8_t timer;         /**< The retransmission timer. */
     u8_t nrtx;          /**< The number of retransmissions for the last segment sent. */
   } tcp;
+#endif
+  IP_Address remote;
+
+  ns16_t port_local;    // port 0 is reserved; can't send to or receive at; it can be used as a do-not-reply
+  ns16_t port_remote;
 
   u16_t flags; // internal flags
 
-#define IP_Connection_Open             0x1000
-#define IP_Connection_LocalSpecified   0x2000
-#define IP_Connection_RemoteSpecified  0x4000
-#define IP_Connection_TimeoutSet       0x8000
+#define IP_Connection_Open             0x8000
+#define IP_Connection_Busy             0x4000
+#define IP_Connection_Protocol_TCP     0x2000
+#define IP_Connection_RemoteSpecified  0x1000
+#define IP_Connection_TimeoutSet       0x0800
 
 public:
+  inline bool is_open () const {
+    return (flags & IP_Connection_Open);
+  }
+  inline bool is_busy () const {
+    return (flags & IP_Connection_Busy);
+  }
+  inline bool is_TCP () const {
+    return (flags & IP_Connection_Protocol_TCP);
+  }
+  inline bool has_remote () const {
+    return (flags & IP_Connection_RemoteSpecified);
+  }
+  inline bool timeout_set () const {
+    return (flags & IP_Connection_TimeoutSet);
+  }
+
   inline u16_t read (u8_t * ptr, u16_t length) {
     return fifo_read.read (ptr, length); // TODO
   }
@@ -97,7 +119,7 @@ public:
 
   /* Note: reset() closes the connection and doesn't open the new one.
    */
-  void reset (IP_Protocol p = p_TCP, u16_t port = 0); // port 0 => find an unused port in range 4096-32000
+  void reset (IP_Protocol p = p_TCP, u16_t port = 0);
 
   /* Note: A new connection is created, but not opened.
    */
@@ -117,7 +139,7 @@ public:
 
   /* Note: Open connection
    */
-  void open ();
+  bool open ();
 
   /* Note: Close connection
    */
@@ -126,7 +148,7 @@ public:
   /* Note: Returns true if the connection is listening on local port
    */
   inline bool listening (const ns16_t & port) const {
-    return ((flags & IP_Connection_Open) /* && (header.port_source == port) */);
+    return (port_local && (port_local == port) && is_open () && !is_busy ());
   }
 
   /* Note: Returns true if the connection can & will handle the incoming buffer
