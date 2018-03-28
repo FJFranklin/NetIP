@@ -531,12 +531,12 @@ public:
     return count;
   }
 
-  inline u16_t push (FIFO & fifo, u16_t buffer_offset) { // write buffer to FIFO
+  inline u16_t push (FIFO & fifo, u16_t & buffer_offset) const { // write buffer to FIFO
     u16_t count = 0;
 
     if (buffer_offset < buffer_used) {
       count = fifo.write (buffer + buffer_offset, buffer_used - buffer_offset);
-      buffer_used += count;
+      buffer_offset += count;
     }
     return count;
   }
