@@ -89,11 +89,25 @@ public:
     return *((const struct IP_Header_TCP *) (buffer + protocol_offset ()));
   }
 
+  inline u16_t tcp_data_offset () const {
+    return ip().header_length () + tcp().header_length ();
+  }
+  inline u16_t tcp_data_length () const {
+    return ip().payload_length () - tcp().header_length ();
+  }
+
   inline struct IP_Header_UDP & udp () {
     return *((struct IP_Header_UDP *) (buffer + protocol_offset ()));
   }
   inline const struct IP_Header_UDP & udp () const {
     return *((const struct IP_Header_UDP *) (buffer + protocol_offset ()));
+  }
+
+  inline u16_t udp_data_offset () const {
+    return ip().header_length () + udp().header_length ();
+  }
+  inline u16_t udp_data_length () const {
+    return ip().payload_length () - udp().header_length ();
   }
 
   inline struct IP_Header_ICMP & icmp () {
@@ -147,6 +161,7 @@ public:
 
   HeaderSniff sniff () const;
 
+  void udp_finalise ();
 private:
   void icmp_finalise ();
 public:

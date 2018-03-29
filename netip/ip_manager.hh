@@ -100,6 +100,13 @@ public:
     chain_buffers_spare.chain_prepend (buffer);
   }
 
+  /* 
+   * gets a free buffer from the spares - if there are any
+   */
+  inline IP_Buffer * get_from_spares () {
+    return chain_buffers_spare.chain_pop ();
+  }
+
   void ping (const IP_Address & address);
 
 private:
@@ -115,7 +122,9 @@ private:
   };
 
   void broadcast (IP_Buffer * buffer);
+public:
   void forward (IP_Buffer * buffer);
+private:
   void register_source (u8_t channel, const IP_Address & source);
 
   RoutingInfo channel_for_destination (u8_t & channel, const IP_Address & destination) const;

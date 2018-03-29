@@ -30,7 +30,7 @@
 
 #include "tests.hh"
 
-class Uino : public IP_TimerClient {
+class Uino : public IP_TimerClient, public IP_Connection::EventListener {
 private:
   u8_t buffer[32];
 
@@ -46,7 +46,17 @@ public:
     number(0),
     bTesting(bTest)
   {
+    udp->set_event_listener (this);
+    udp->open (); // just listen; don't connect
+  }
+
+  virtual bool buffer_received (const IP_Connection & connection, const IP_Buffer & buffer_incoming) {
     // ...
+    return true;
+  }
+  virtual bool buffer_to_send (const IP_Connection & connection, IP_Buffer & buffer_outgoing) {
+    // ...
+    return true;
   }
 
   void test (const char * info, const u8_t * buffer, u16_t length) {
@@ -170,7 +180,6 @@ int main (int argc, char ** argv) {
   IP.connection_add (&con);
 
   IP_Connection udp(p_UDP, 0xBCCB);
-  udp.open (); // just listen; don't connect
   IP.connection_add (&udp);
 
   Uino uino(&udp, bTesting);

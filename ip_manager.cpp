@@ -125,7 +125,7 @@ bool IP_Manager::queue (IP_Buffer *& buffer) {
 
   if (buffer) {
     IP_Buffer * pending = buffer;
-    IP_Buffer * spare = chain_buffers_spare.chain_pop ();
+    IP_Buffer * spare = get_from_spares ();
 
     if (spare) {
       buffer = spare;
@@ -398,7 +398,7 @@ bool IP_Manager::timeout () {
 
 void IP_Manager::ping (const IP_Address & address) {
   DEBUG_PRINT ("IP_Manager::ping\n");
-  IP_Buffer * spare = chain_buffers_spare.chain_pop ();
+  IP_Buffer * spare = get_from_spares ();
 
   if (!spare) {
     DEBUG_PRINT ("IP_Manager::ping: no spare\n");

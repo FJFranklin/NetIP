@@ -30,20 +30,49 @@
 class IP_Channel;
 
 class IP_Connection : public Link, public IP_TimerClient {
+public:
+  /* The EventListener interface provides a mechanism for sending data in whole-packet form rather than
+   * using IP_Connection's default streaming.
+   */
+  class EventListener {
+  public:
+    /* sent every time a buffer is received
+     * 
+     * if buffer_received() returns false, the buffer will be processed as normal;
+     * if it returns true, the buffer will be treated as if already processed.
+     */
+    virtual bool buffer_received (const IP_Connection & connection, const IP_Buffer & buffer) = 0;
+
+    /* sent in response to a call to request_to_send()
+     * 
+     * if buffer_to_send() returns false, the buffer will be discarded
+     * if it returns true, the buffer will be finalised and sent (ignoring the FIFO).
+     */
+    virtual bool buffer_to_send (const IP_Connection & connection, IP_Buffer & buffer) = 0;
+
+    virtual ~EventListener () {
+      // ...
+    }
+  };
+
 private:
   IP_Timer     timer;
 
   IP_Buffer * buffer_in;
-  IP_Buffer * buffer_out;
 
   u16_t data_in_offset;
-  u16_t data_out_offset;
+  u16_t data_in_length;
 
   u8_t fifo_read_buffer[IP_Connection_FIFO];
   FIFO fifo_read;
 
   u8_t fifo_write_buffer[IP_Connection_FIFO];
   FIFO fifo_write;
+
+  EventListener * EL;
+
+  bool bSendRequested;
+
 #if 0
   /* IP header - we support one or the other, not both
    */
@@ -108,9 +137,11 @@ public:
   }
 
   inline u16_t read (u8_t * ptr, u16_t length) {
+    // if (is_open ())
     return fifo_read.read (ptr, length); // TODO
   }
   inline u16_t write (const u8_t * ptr, u16_t length) {
+    // if (is_open ())
     return fifo_write.write (ptr, length); // TODO
   }
   inline u16_t print (const char * str) {
@@ -126,9 +157,10 @@ public:
   IP_Connection (IP_Protocol p = p_TCP, u16_t port = 0) :
     timer(this),
     buffer_in(0),
-    buffer_out(0),
     fifo_read(fifo_read_buffer, IP_Connection_FIFO),
-    fifo_write(fifo_write_buffer, IP_Connection_FIFO)
+    fifo_write(fifo_write_buffer, IP_Connection_FIFO),
+    EL(0),
+    bSendRequested(false)
   {
     reset (p, port);
   }
@@ -137,6 +169,22 @@ public:
     // ...
   }
 
+  inline void set_event_listener (EventListener * listener) {
+    EL = listener;
+  }
+
+  inline void request_to_send () { // get a buffer ready for output, then notify
+    if (is_open () && has_remote ()) {
+      bSendRequested = true;
+    }
+  }
+
+  void update (); // internal management of connection & buffers - call frequently!
+
+private:
+  bool open_tcp ();
+  bool open_udp ();
+public:
   /* Note: Open connection
    */
   bool open ();
@@ -146,11 +194,17 @@ public:
   void close ();
 
   /* Note: Returns true if the connection is listening on local port
+   *       ignoring open/busy state; this function is to help IP_Manager
+   *       allocate unique port numbers in the dynamic range.
    */
   inline bool listening (const ns16_t & port) const {
-    return (port_local && (port_local == port) && is_open () && !is_busy ());
+    return (port_local && (port_local == port));
   }
 
+private:
+  bool accept_tcp (IP_Buffer * buffer, bool bNewConnection);
+  bool accept_udp (IP_Buffer * buffer);
+public:
   /* Note: Returns true if the connection can & will handle the incoming buffer
    */
   bool accept (IP_Buffer * buffer);
@@ -158,10 +212,6 @@ public:
   /* Note: Open connection to remote address/port
    */
   bool connect (const IP_Address & remote_address, u16_t remote_port);
-
-  void update () { // opportunity for low-level management; not time-specific
-    // ...
-  }
 
 protected:
   virtual bool timeout (); // return true if the timer should be reset & retained

@@ -202,6 +202,31 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
   return hs_Protocol_Unsupported;
 }
 
+void IP_Buffer::udp_finalise () {
+  ip().source() = IP_Manager::manager().host;
+  ip().set_total_length (length ());
+
+  Check16 check;
+
+  if (!ip().is_IPv6 ()) {
+    ip().header (check);
+    ip().checksum() = check.checksum ();
+    check.clear ();
+  }
+
+  u16_t payload_offset = ip().header_length ();
+  u16_t payload_length = ip().payload_length ();
+
+  udp().length() = payload_length;
+
+  udp().header (check);
+
+  if (payload_length > udp().header_length ()) {
+    check_16 (check, payload_offset + udp().header_length ());
+  }
+  udp().checksum() = check.checksum ();
+}
+
 void IP_Buffer::icmp_finalise () {
   Check16 check;
 

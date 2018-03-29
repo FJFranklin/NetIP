@@ -24,97 +24,251 @@
 #include "netip/ip_manager.hh"
 
 void IP_Connection::reset (IP_Protocol p, u16_t port) {
+  if (is_open ()) {
+    close ();
+  }
+
   flags = (p == p_TCP) ? IP_Connection_Protocol_TCP : 0;
 
   port_local = port;
+
+  if (buffer_in) {
+    IP_Manager::manager().add_to_spares (buffer_in);
+    buffer_in = 0;
+  }
+
+  fifo_read.clear ();
+  fifo_write.clear ();
+}
+
+void IP_Connection::update () {
+  if (is_open ()) {
+
+    if (buffer_in) {
+      data_in_length -= buffer_in->push (fifo_read, data_in_offset);
+
+      if (!data_in_length) {
+	IP_Manager::manager().add_to_spares (buffer_in);
+	buffer_in = 0;
+      }
+    }
+
+    if (is_TCP ()) {
+
+      // TODO: // FIXME
+
+    } else if (has_remote ()) { // UDP
+
+      if (!fifo_write.is_empty () || (EL && bSendRequested)) {
+	IP_Buffer * buffer_out = IP_Manager::manager().get_from_spares ();
+
+	if (buffer_out) {
+	  buffer_out->defaults (p_UDP);
+
+	  if (!fifo_write.is_empty ()) {
+	    buffer_out->pull (fifo_write);
+	  } else {
+	    bSendRequested = false;
+
+	    if (!EL->buffer_to_send (*this, *buffer_out)) { // it was asked for, but not used...
+	      IP_Manager::manager().add_to_spares (buffer_out);
+	      buffer_out = 0;
+	    } else if (buffer_out->length () <= buffer_out->udp_data_offset ()) { // make sure something was added
+	      IP_Manager::manager().add_to_spares (buffer_out);
+	      buffer_out = 0;
+	    }
+	  }
+	}
+	if (buffer_out) {
+	  buffer_out->channel (0);
+
+	  buffer_out->ip().destination() = remote;
+
+	  buffer_out->udp().source() = port_local;
+	  buffer_out->udp().destination() = port_remote;
+
+	  buffer_out->udp_finalise ();
+
+	  IP_Manager::manager().forward (buffer_out); // send it
+	}
+      }
+    }
+  } else if (is_busy ()) { // connection recently closed and still active
+    
+    if (is_TCP ()) {
+
+      // TODO: // FIXME
+
+    } else if (has_remote ()) { // UDP
+
+      if (!fifo_write.is_empty ()) { // finish writing the buffered output
+	IP_Buffer * buffer_out = IP_Manager::manager().get_from_spares ();
+
+	if (buffer_out) {
+	  buffer_out->defaults (p_UDP);
+	  buffer_out->pull (fifo_write);
+	  buffer_out->channel (0);
+
+	  buffer_out->ip().destination() = remote;
+
+	  buffer_out->udp().source() = port_local;
+	  buffer_out->udp().destination() = port_remote;
+
+	  buffer_out->udp_finalise ();
+
+	  IP_Manager::manager().forward (buffer_out); // send it
+	}
+      }
+      if (fifo_write.is_empty ()) { // nothing else to do
+	flags &= ~IP_Connection_Busy;
+      }
+    }
+  }
+}
+
+bool IP_Connection::open_tcp () {
+  flags |= IP_Connection_Open;
+  // TODO: what else?
+  return true;
+}
+
+bool IP_Connection::open_udp () {
+  flags |= IP_Connection_Open;
+  return true;
 }
 
 bool IP_Connection::open () {
-  if (flags & IP_Connection_Open) {
+  if (is_open ()) {
     return true;
+  }
+  if (is_busy ()) { // this connection hasn't finished closing yet
+    return false;
   }
 
   if (is_TCP ()) {
-
-    if (port_local) {
-      flags |= IP_Connection_Open;
-      // TODO: what else?
-      return true;
+    if (port_local && has_remote ()) {
+      return open_tcp ();
     }
     return false;
-
-  } else { // UDP
-
-    if (port_local || has_remote ()) {
-      flags |= IP_Connection_Open;
-      // TODO: what else?
-      return true;
-    }
-    return false;
-
   }
+
+  // UDP
+
+  if (port_local || has_remote ()) {
+    return open_udp ();
+  }
+  return false;
 }
 
 void IP_Connection::close () {
   flags &= ~(IP_Connection_Open | IP_Connection_TimeoutSet);
-  // TODO: what else?
+  flags |=   IP_Connection_Busy;
 }
 
 bool IP_Connection::timeout () { // return true if the timer should be reset & retained
-  if (!(flags & IP_Connection_TimeoutSet)) {
+  if (!timeout_set () || !is_open ()) {
     // something went wrong
-    return false;
-  }
-  if (!(flags & IP_Connection_Open)) {
     return false;
   }
   // TODO:
   return false;
 }
 
+bool IP_Connection::accept_tcp (IP_Buffer * buffer, bool bNewConnection) {
+  if (is_busy () && bNewConnection) {
+    return false; // this connection hasn't finished closing yet; don't create a new one
+  }
+
+  // TODO: update TCP state
+
+  bool bAcknowledge = false;
+
+  if (EL) { // we have an event listener
+    if (EL->buffer_received (*this, *buffer)) { // the new buffer has now been handled by the listener
+      bAcknowledge = true;
+    }
+  }
+
+  if (!bAcknowledge) {
+    // TODO: Process data stream
+    buffer_in = buffer;
+
+    data_in_offset = buffer->tcp_data_offset ();
+    data_in_length = buffer->tcp_data_length ();
+  }
+  if (bAcknowledge) {
+    // TODO: Send acknowledgement
+  }
+  // FIXME!!!
+  return true;
+}
+
+bool IP_Connection::accept_udp (IP_Buffer * buffer) {
+  if (is_busy ()) {
+    return false; // this connection hasn't finished closing yet
+  }
+
+  if (EL) { // we have an event listener
+    if (EL->buffer_received (*this, *buffer)) { // the new buffer has now been handled by the listener
+      IP_Manager::manager().add_to_spares (buffer);
+      return true;
+    }
+  }
+
+  data_in_offset = buffer->udp_data_offset ();
+  data_in_length = buffer->udp_data_length ();
+
+  data_in_length -= buffer->push (fifo_read, data_in_offset);
+
+  if (data_in_length) {
+    buffer_in = buffer; // save for later processing
+  } else {
+    IP_Manager::manager().add_to_spares (buffer);
+  }
+  return true;
+}
+
 bool IP_Connection::accept (IP_Buffer * buffer) {
-  if (!is_open () || is_busy () || !port_local) {
+  if (!is_open () || buffer_in || !port_local) {
     return false;
   }
 
   if (is_TCP ()) {
-
     if (!buffer->ip().is_TCP ()) { // incoming stream isn't TCP
       return false;
     }
+    if (buffer->tcp().destination () != port_local) { // local port mismatch
+      return false;
+    }
     if (has_remote ()) { // make sure remote address & port match
-      if (buffer->tcp().destination () != port_local) { // local port mismatch
-	return false;
-      }
       if (buffer->tcp().source () != port_remote) { // remote port mismatch
 	return false;
       }
       if (buffer->ip().source () != remote) { // remote address mismatch
 	return false;
       }
-      // TODO: what else?
-      IP_Manager::manager().add_to_spares (buffer);
-      return true;
-
-    } else { // need to establish connection
-      // TODO: what else?
-      IP_Manager::manager().add_to_spares (buffer);
-      return true;
+      return accept_tcp (buffer, false);
     }
-  } else { // UDP
-
-    if (!buffer->ip().is_UDP ()) { // incoming stream isn't UDP
-      return false;
-    }
-    if (buffer->udp().destination () != port_local) { // local port mismatch
-      return false;
-    }
-    // TODO: what else?
-    IP_Manager::manager().add_to_spares (buffer);
-    return true;
-
+    return accept_tcp (buffer, true); // need to establish connection
   }
-  return false; // FIXME
+
+  // Not TCP so should be UDP
+
+  if (!buffer->ip().is_UDP ()) { // incoming stream isn't UDP
+    return false;
+  }
+  if (buffer->udp().destination () != port_local) { // local port mismatch
+    return false;
+  }
+  if (has_remote ()) { // make sure remote address & port match
+    if (buffer->udp().source () != port_remote) { // remote port mismatch
+      return false;
+    }
+    if (buffer->ip().source () != remote) { // remote address mismatch
+      return false;
+    }
+  }
+  return accept_udp (buffer);
 }
 
 bool IP_Connection::connect (const IP_Address & address, u16_t port) {

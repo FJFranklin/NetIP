@@ -501,6 +501,10 @@ public:
     return count;
   }
 
+  inline u16_t print (const char * str) {
+    return append ((const u8_t *) str, strlen (str));
+  }
+
   inline u16_t write (u16_t offset, const u8_t * ptr, u16_t length) {
     u16_t count = 0;
 
