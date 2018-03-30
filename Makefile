@@ -1,6 +1,7 @@
 all:	nip
 
 ALL_SOURCES=\
+	examples/nip/nip.cc \
 	ip_buffer.cpp \
 	ip_channel.cpp \
 	ip_connection.cpp \
@@ -11,7 +12,7 @@ ALL_SOURCES=\
 	netip/unix/ip_arch.cc
 
 ALL_OBJECTS=\
-	nip.o\
+	examples/nip/nip.o \
 	ip_buffer.o \
 	ip_channel.o \
 	ip_connection.o \
@@ -36,10 +37,10 @@ ALL_HEADERS=\
 	netip/unix/ip_arch.hh \
 	netip/unix/ip_arch_serial.hh \
 	netip/unix/ip_arch_serial.cc \
-	tests.hh
+	examples/nip/tests.hh
 
 clean:	
-	rm $(ALL_OBJECTS)
+	rm -f $(ALL_OBJECTS) *~ */*~ */*/*~
 
 nip:	$(ALL_OBJECTS) $(ALL_HEADERS)
 	c++ -o nip $(ALL_OBJECTS)
