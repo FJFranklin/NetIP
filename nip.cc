@@ -39,24 +39,38 @@ private:
   u8_t number;
 
   bool bTesting;
+  bool bOn;
+  bool bConnected;
 
 public:
   Uino (IP_Connection * con, bool bTest) :
     udp(con),
     number(0),
-    bTesting(bTest)
+    bTesting(bTest),
+    bOn(false),
+    bConnected(false)
   {
     udp->set_event_listener (this);
     udp->open (); // just listen; don't connect
   }
 
   virtual bool buffer_received (const IP_Connection & connection, const IP_Buffer & buffer_incoming) {
+    u16_t offset = buffer_incoming.udp_data_offset ();
+    u16_t length = buffer_incoming.udp_data_length ();
+#if 0
+    fprintf (stderr, "==========> \"");
+
+    for (u16_t c = 0; c < length; c++) {
+      fputc (buffer_incoming[offset+c], stderr);
+    }
+    fprintf (stderr, "\"\n");
+#endif
     // ...
-    return true;
+    return false; // we don't handle these
   }
   virtual bool buffer_to_send (const IP_Connection & connection, IP_Buffer & buffer_outgoing) {
     // ...
-    return true;
+    return false; // we don't handle these
   }
 
   void test (const char * info, const u8_t * buffer, u16_t length) {
@@ -117,6 +131,18 @@ public:
   }
 
   virtual bool timeout () {
+    if (false /* !bConnected */) {
+      bConnected = udp->connect (IP_Manager::manager().gateway, 0xBCCB); // 48331 (in the range 48130-48555 currently unassigned by IANA)
+    }
+
+    if (bOn) {
+      bOn = false;
+      // udp->print ("The quick brown fox jumps over the lazy dog.");
+    } else {
+      bOn = true;
+      // udp->print ("Aberystwyth, mon amour.");
+    }
+
     if (bTesting) {
       if (number < test_count) {
 	test (tests[number].info, tests[number].data, tests[number].size);
@@ -126,15 +152,16 @@ public:
       }
     }
 
-    while (true) {
-      u16_t count = udp->read (buffer, 32);
+    u16_t count = udp->read (buffer, 32);
 
-      if (!count) {
-	break;
-      }
-      fprintf (stderr, "UDP-0xC00C: \"");
-      for (u16_t c = 0; c < count; c++) {
-	fputc (buffer[c], stderr);
+    if (count) {
+      fprintf (stderr, "UDP-0xBCCB: \"");
+
+      while (count) {
+	for (u16_t c = 0; c < count; c++) {
+	  fputc (buffer[c], stderr);
+	}
+	count = udp->read (buffer, 32);
       }
       fprintf (stderr, "\"\n");
     }

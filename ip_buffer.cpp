@@ -176,6 +176,7 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
   if (ip().is_UDP ()) {
     DEBUG_PRINT ("IP_Buffer::sniff: UDP\n");
     if (payload_length < 8) { // minimum size of UDP header
+      DEBUG_PRINT ("IP_Buffer::sniff: UDP: Packet too short\n");
       return hs_Protocol_PacketTooShort;
     }
 
@@ -193,6 +194,7 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
       checksum_calc = check.checksum ();
 
       if (checksum_sent != checksum_calc) {
+	DEBUG_PRINT ("IP_Buffer::sniff: UDP: Protocol checksum\n");
 	return hs_Protocol_Checksum;
       }
     }
@@ -213,6 +215,8 @@ void IP_Buffer::udp_finalise () {
     ip().checksum() = check.checksum ();
     check.clear ();
   }
+
+  ip().pseudo_header (check);
 
   u16_t payload_offset = ip().header_length ();
   u16_t payload_length = ip().payload_length ();

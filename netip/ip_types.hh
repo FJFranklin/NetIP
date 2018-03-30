@@ -501,7 +501,7 @@ public:
     return count;
   }
 
-  inline u16_t print (const char * str) {
+  inline u16_t append (const char * str) {
     return append ((const u8_t *) str, strlen (str));
   }
 

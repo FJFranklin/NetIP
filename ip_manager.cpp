@@ -35,7 +35,7 @@ IP_Manager & IP_Manager::manager () {
 IP_Manager::IP_Manager () :
   timer(this),
   ping_interval(1),
-  last_port(4096),
+  last_port(0xC000),
   host(IP_Address_DefaultHost),
   gateway(IP_Address_DefaultGateway),
   netmask(IP_Address_DefaultNetmask),
@@ -356,6 +356,7 @@ void IP_Manager::tick () {
 	case IP_Buffer::hs_Protocol_PacketTooShort:
 	case IP_Buffer::hs_Protocol_FrameError:
 	case IP_Buffer::hs_Protocol_Checksum:
+	  pending->print ();
 	  DEBUG_PRINT("IP_Manager::tick: Bad Packet\n");
 	  add_to_spares (pending);
 	  break;

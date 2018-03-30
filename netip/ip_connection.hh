@@ -136,14 +136,10 @@ public:
     return (flags & IP_Connection_TimeoutSet);
   }
 
-  inline u16_t read (u8_t * ptr, u16_t length) {
-    // if (is_open ())
-    return fifo_read.read (ptr, length); // TODO
-  }
-  inline u16_t write (const u8_t * ptr, u16_t length) {
-    // if (is_open ())
-    return fifo_write.write (ptr, length); // TODO
-  }
+  u16_t read (u8_t * ptr, u16_t length);
+
+  u16_t write (const u8_t * ptr, u16_t length);
+
   inline u16_t print (const char * str) {
     return write ((const u8_t *) str, strlen (str));
   }

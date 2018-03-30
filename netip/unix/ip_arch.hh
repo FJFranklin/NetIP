@@ -24,6 +24,7 @@
 #ifndef __ip_arch_hh__
 #define __ip_arch_hh__
 
+#include <cstdio>
 #include <cstring>
 
 /* Fundamental types for 8-, 16- & 32-bit variables
@@ -33,7 +34,6 @@ typedef unsigned short u16_t;
 typedef unsigned long  u32_t;
 
 #if IP_DEBUG
-#include <cstdio>
 #define DEBUG_PRINT(x) fputs (x, stderr)
 #else
 #define DEBUG_PRINT(x) while (false)

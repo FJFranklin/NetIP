@@ -31,14 +31,6 @@ void IP_Connection::reset (IP_Protocol p, u16_t port) {
   flags = (p == p_TCP) ? IP_Connection_Protocol_TCP : 0;
 
   port_local = port;
-
-  if (buffer_in) {
-    IP_Manager::manager().add_to_spares (buffer_in);
-    buffer_in = 0;
-  }
-
-  fifo_read.clear ();
-  fifo_write.clear ();
 }
 
 void IP_Connection::update () {
@@ -126,6 +118,66 @@ void IP_Connection::update () {
   }
 }
 
+u16_t IP_Connection::read (u8_t * ptr, u16_t length) {
+  if (!is_open ()) {
+    return 0;
+  }
+
+  u16_t count = fifo_read.read (ptr, length);
+
+  while ((count < length) && buffer_in) {
+    data_in_length -= buffer_in->push (fifo_read, data_in_offset);
+
+    if (!data_in_length) {
+      IP_Manager::manager().add_to_spares (buffer_in);
+      buffer_in = 0;
+    }
+    count += fifo_read.read (ptr + count, length - count);
+  }
+  return count;
+}
+
+u16_t IP_Connection::write (const u8_t * ptr, u16_t length) {
+  if (!is_open () || !has_remote ()) {
+    return 0;
+  }
+
+  u16_t count = fifo_write.write (ptr, length);
+
+  if (count < length) {
+    IP_Buffer * buffer_out = IP_Manager::manager().get_from_spares ();
+
+    if (buffer_out) {
+      if (is_TCP ()) {
+
+	// TODO: // FIXME
+
+      } else { // UDP
+
+	buffer_out->defaults (p_UDP);
+	buffer_out->pull (fifo_write);
+
+	if (length - count > buffer_out->available ()) {
+	  length = count + buffer_out->available ();
+	}
+	count += buffer_out->append (ptr + count, length - count);
+
+	buffer_out->channel (0);
+
+	buffer_out->ip().destination() = remote;
+
+	buffer_out->udp().source() = port_local;
+	buffer_out->udp().destination() = port_remote;
+
+	buffer_out->udp_finalise ();
+
+	IP_Manager::manager().forward (buffer_out); // send it
+      }
+    }
+  }
+  return count;
+}
+
 bool IP_Connection::open_tcp () {
   flags |= IP_Connection_Open;
   // TODO: what else?
@@ -163,6 +215,14 @@ bool IP_Connection::open () {
 void IP_Connection::close () {
   flags &= ~(IP_Connection_Open | IP_Connection_TimeoutSet);
   flags |=   IP_Connection_Busy;
+
+  if (buffer_in) {
+    IP_Manager::manager().add_to_spares (buffer_in);
+    buffer_in = 0;
+  }
+
+  fifo_read.clear ();
+  fifo_write.clear ();
 }
 
 bool IP_Connection::timeout () { // return true if the timer should be reset & retained

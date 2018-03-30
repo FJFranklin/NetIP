@@ -36,7 +36,7 @@
 #endif
 
 #if IP_ARCH_UNIX
-#define IP_DEBUG    1
+#define IP_DEBUG    0
 #include "unix/ip_arch.hh"
 #endif
 #if IP_ARCH_ARDUINO
