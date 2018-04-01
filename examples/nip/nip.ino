@@ -19,6 +19,14 @@ public:
     digitalWrite (LED_BUILTIN, LOW);
   }
 
+  virtual void connection_has_opened () {
+    bConnected = true;
+  }
+
+  virtual void connection_has_closed () {
+    bConnected = false;
+  }
+
   virtual bool buffer_received (const IP_Connection & connection, const IP_Buffer & buffer_incoming) {
     // ...
     return false; // we don't handle these
@@ -35,7 +43,7 @@ public:
 
   virtual bool timeout () { // should be called once a second
     if (!bConnected) {
-      bConnected = udp->connect (IP_Manager::manager().gateway, 0xBCCB); // 48331 (in the range 48130-48555 currently unassigned by IANA)
+      udp->connect (IP_Manager::manager().gateway, 0xBCCB); // 48331 (in the range 48130-48555 currently unassigned by IANA)
     }
     if (bConnected) {
       udp->request_to_send ();

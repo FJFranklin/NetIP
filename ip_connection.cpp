@@ -27,6 +27,7 @@ void IP_Connection::reset (IP_Protocol p, u16_t port) {
   if (is_open ()) {
     close ();
   }
+  fifo_write.clear ();
 
   flags = (p == p_TCP) ? IP_Connection_Protocol_TCP : 0;
 
@@ -91,28 +92,40 @@ void IP_Connection::update () {
 
       // TODO: // FIXME
 
-    } else if (has_remote ()) { // UDP
+    } else { // UDP
 
-      if (!fifo_write.is_empty ()) { // finish writing the buffered output
-	IP_Buffer * buffer_out = IP_Manager::manager().get_from_spares ();
-
-	if (buffer_out) {
-	  buffer_out->defaults (p_UDP);
-	  buffer_out->pull (fifo_write);
-	  buffer_out->channel (0);
-
-	  buffer_out->ip().destination() = remote;
-
-	  buffer_out->udp().source() = port_local;
-	  buffer_out->udp().destination() = port_remote;
-
-	  buffer_out->udp_finalise ();
-
-	  IP_Manager::manager().forward (buffer_out); // send it
-	}
-      }
-      if (fifo_write.is_empty ()) { // nothing else to do
+      if (!has_remote ()) { // this connection is only listening; nothing further to do
 	flags &= ~IP_Connection_Busy;
+
+	if (EL) {
+	  EL->connection_has_closed ();
+	}
+      } else {
+	if (!fifo_write.is_empty ()) { // finish writing the buffered output
+	  IP_Buffer * buffer_out = IP_Manager::manager().get_from_spares ();
+
+	  if (buffer_out) {
+	    buffer_out->defaults (p_UDP);
+	    buffer_out->pull (fifo_write);
+	    buffer_out->channel (0);
+
+	    buffer_out->ip().destination() = remote;
+
+	    buffer_out->udp().source() = port_local;
+	    buffer_out->udp().destination() = port_remote;
+
+	    buffer_out->udp_finalise ();
+
+	    IP_Manager::manager().forward (buffer_out); // send it
+	  }
+	}
+	if (fifo_write.is_empty ()) { // finished writing; nothing else to do
+	  flags &= ~IP_Connection_Busy;
+
+	  if (EL) {
+	    EL->connection_has_closed ();
+	  }
+	}
       }
     }
   }
@@ -186,6 +199,10 @@ bool IP_Connection::open_tcp () {
 
 bool IP_Connection::open_udp () {
   flags |= IP_Connection_Open;
+
+  if (EL) {
+    EL->connection_has_opened ();
+  }
   return true;
 }
 
@@ -222,7 +239,6 @@ void IP_Connection::close () {
   }
 
   fifo_read.clear ();
-  fifo_write.clear ();
 }
 
 bool IP_Connection::timeout () { // return true if the timer should be reset & retained
@@ -331,9 +347,9 @@ bool IP_Connection::accept (IP_Buffer * buffer) {
   return accept_udp (buffer);
 }
 
-bool IP_Connection::connect (const IP_Address & address, u16_t port) {
+void IP_Connection::connect (const IP_Address & address, u16_t port) {
   if (is_open ()) {
-    return false;
+    return;
   }
 
   if (is_TCP ()) {
@@ -383,10 +399,7 @@ bool IP_Connection::connect (const IP_Address & address, u16_t port) {
       remote = address;
       port_remote = port;
 
-      return open ();
+      open ();
     }
-    return false;
-
   }
-  return false;
 }

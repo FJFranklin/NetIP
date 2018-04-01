@@ -54,6 +54,14 @@ public:
     udp->open (); // just listen; don't connect
   }
 
+  virtual void connection_has_opened () {
+    bConnected = true;
+  }
+
+  virtual void connection_has_closed () {
+    bConnected = false;
+  }
+
   virtual bool buffer_received (const IP_Connection & connection, const IP_Buffer & buffer_incoming) {
     u16_t offset = buffer_incoming.udp_data_offset ();
     u16_t length = buffer_incoming.udp_data_length ();
@@ -132,7 +140,7 @@ public:
 
   virtual bool timeout () {
     if (false /* !bConnected */) {
-      bConnected = udp->connect (IP_Manager::manager().gateway, 0xBCCB); // 48331 (in the range 48130-48555 currently unassigned by IANA)
+      udp->connect (IP_Manager::manager().gateway, 0xBCCB); // 48331 (in the range 48130-48555 currently unassigned by IANA)
     }
 
     if (bOn) {

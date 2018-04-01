@@ -50,6 +50,10 @@ public:
      */
     virtual bool buffer_to_send (const IP_Connection & connection, IP_Buffer & buffer) = 0;
 
+    virtual void connection_has_opened () = 0;
+
+    virtual void connection_has_closed () = 0;
+
     virtual ~EventListener () {
       // ...
     }
@@ -207,7 +211,7 @@ public:
 
   /* Note: Open connection to remote address/port
    */
-  bool connect (const IP_Address & remote_address, u16_t remote_port);
+  void connect (const IP_Address & remote_address, u16_t remote_port);
 
 protected:
   virtual bool timeout (); // return true if the timer should be reset & retained
