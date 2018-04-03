@@ -29,7 +29,13 @@ void IP_Connection::reset (IP_Protocol p, u16_t port) {
   }
   fifo_write.clear ();
 
-  flags = (p == p_TCP) ? IP_Connection_Protocol_TCP : 0;
+  if (buffer_tcp) {
+    IP_Manager::manager().add_to_spares (buffer_tcp);
+    buffer_tcp = 0;
+  }
+
+  flags = 0;
+  is_TCP (p == p_TCP);
 
   port_local = port;
 }
@@ -47,6 +53,12 @@ void IP_Connection::update () {
     }
 
     if (is_TCP ()) {
+
+      if (tcp_send_ack ()) {
+	if (tcp_ack ()) {
+	  tcp_send_ack (false);
+	}
+      }
 
       // TODO: // FIXME
 
@@ -86,16 +98,86 @@ void IP_Connection::update () {
 	}
       }
     }
-  } else if (is_busy ()) { // connection recently closed and still active
+  } else if (is_busy ()) { // connection recently closed and still active, or attempting to establish connection
     
     if (is_TCP ()) {
 
-      // TODO: // FIXME
+      if (tcp_send_syn ()) {  // we wish to set up a new connection
+	DEBUG_PRINT ("IP_Connection::update: send SYN\n");
+	if (!buffer_tcp) {    // we haven't send a SYN yet
+	  buffer_tcp = IP_Manager::manager().get_from_spares ();
+	  buffer_tcp->ref (); // don't return to spares after sending
+	}
+	if (buffer_tcp) {     // set up a new connection
+	  if (!tcp_syn_sent ()) { // this is the very first attempt
+	    tcp_prepare (buffer_tcp);
+
+	    buffer_tcp->tcp().flag_syn (true);
+
+	    tcp.seq_no = IP_Manager::manager().milliseconds (); // just a random (-ish) number
+
+	    buffer_tcp->tcp().seq_no() = tcp.seq_no++;
+
+	    buffer_tcp->tcp_finalise ();
+
+	    tcp.attempts = 1;
+	    tcp.send_time = tcp.seq_no;
+	  } else {
+	    tcp.attempts++;
+	    tcp.send_time = IP_Manager::manager().milliseconds ();
+	  }
+
+	  IP_Manager::manager().forward (buffer_tcp); // send it
+
+	  timer.start (IP_Manager::manager (), 500); // TODO: 500?
+	  timeout_set (true);
+
+	  tcp_send_syn (false);
+	  tcp_syn_sent (true);
+	}
+      }
+
+      if (tcp_send_syn_ack ()) {  // we wish to respond to a new connection
+	DEBUG_PRINT ("IP_Connection::update: send SYN-ACK\n");
+	if (!buffer_tcp) {        // we haven't send a SYN ACK yet
+	  buffer_tcp = IP_Manager::manager().get_from_spares ();
+	  buffer_tcp->ref ();     // don't return to spares after sending
+	}
+	if (buffer_tcp) {         // respond to a new connection
+	  if (!tcp_syn_ack_sent ()) { // this is the very first attempt
+	    tcp_prepare (buffer_tcp);
+
+	    tcp.seq_no = IP_Manager::manager().milliseconds (); // just a random (-ish) number
+
+	    buffer_tcp->tcp().seq_no() =   tcp.seq_no++;
+	    buffer_tcp->tcp().ack_no() = ++tcp.ack_no;
+
+	    buffer_tcp->tcp().flag_syn (true);
+	    buffer_tcp->tcp().flag_ack (true);
+
+	    buffer_tcp->tcp_finalise ();
+
+	    tcp.attempts = 1;
+	    tcp.send_time = tcp.seq_no;
+	  } else {
+	    tcp.attempts++;
+	    tcp.send_time = IP_Manager::manager().milliseconds ();
+	  }
+
+	  IP_Manager::manager().forward (buffer_tcp); // send it
+
+	  timer.start (IP_Manager::manager (), 500); // TODO: 500?
+	  timeout_set (true);
+
+	  tcp_send_syn_ack (false);
+	  tcp_syn_ack_sent (true);
+	}
+      }
 
     } else { // UDP
 
       if (!has_remote ()) { // this connection is only listening; nothing further to do
-	flags &= ~IP_Connection_Busy;
+	is_busy (false);
 
 	if (EL) {
 	  EL->connection_has_closed ();
@@ -120,7 +202,7 @@ void IP_Connection::update () {
 	  }
 	}
 	if (fifo_write.is_empty ()) { // finished writing; nothing else to do
-	  flags &= ~IP_Connection_Busy;
+	  is_busy (false);
 
 	  if (EL) {
 	    EL->connection_has_closed ();
@@ -191,21 +273,6 @@ u16_t IP_Connection::write (const u8_t * ptr, u16_t length) {
   return count;
 }
 
-bool IP_Connection::open_tcp () {
-  flags |= IP_Connection_Open;
-  // TODO: what else?
-  return true;
-}
-
-bool IP_Connection::open_udp () {
-  flags |= IP_Connection_Open;
-
-  if (EL) {
-    EL->connection_has_opened ();
-  }
-  return true;
-}
-
 bool IP_Connection::open () {
   if (is_open ()) {
     return true;
@@ -213,50 +280,155 @@ bool IP_Connection::open () {
   if (is_busy ()) { // this connection hasn't finished closing yet
     return false;
   }
-
   if (is_TCP ()) {
-    if (port_local && has_remote ()) {
-      return open_tcp ();
+    if (!is_open () && !is_busy ()) {
+      tcp_server (true);
+      return true;
     }
+    // use connect for TCP remote connections
     return false;
   }
 
   // UDP
 
   if (port_local || has_remote ()) {
-    return open_udp ();
+    is_open (true);
+
+    if (EL) {
+      EL->connection_has_opened ();
+    }
+    return true;
   }
   return false;
 }
 
 void IP_Connection::close () {
-  flags &= ~(IP_Connection_Open | IP_Connection_TimeoutSet);
-  flags |=   IP_Connection_Busy;
+  is_open (false);
+  is_busy (true);
 
+  /* the only reason we would have buffer_in is if there is more data for the user
+   * - who has closed the connection now
+   */
   if (buffer_in) {
     IP_Manager::manager().add_to_spares (buffer_in);
     buffer_in = 0;
   }
 
+  /* similarly for the read buffer
+   */
   fifo_read.clear ();
 }
 
 bool IP_Connection::timeout () { // return true if the timer should be reset & retained
-  if (!timeout_set () || !is_open ()) {
-    // something went wrong
+  if (!timeout_set ()) {
+    // was the connection reset?
     return false;
   }
-  // TODO:
+  if (tcp_syn_sent ()) {
+    fprintf (stderr, "timeout while sending SYN.\n");
+  } else {
+    fprintf (stderr, "other timeout (unhandled).\n");
+  }
   return false;
 }
 
-bool IP_Connection::accept_tcp (IP_Buffer * buffer, bool bNewConnection) {
-  if (is_busy () && bNewConnection) {
-    return false; // this connection hasn't finished closing yet; don't create a new one
+bool IP_Connection::accept_tcp (IP_Buffer * buffer) {
+  DEBUG_PRINT ("IP_Connection::accept_tcp\n");
+  if (!buffer->tcp().source ()) { // remote port cannot be 0
+    return false;
   }
 
-  // TODO: update TCP state
+  /* At this point, we know it's a TCP packet and the incoming port is correct.
+   */
+  if (!has_remote ()) {
+    DEBUG_PRINT ("IP_Connection::accept_tcp: !has_remote()\n");
 
+    /* No remote address & port identified yet; the only thing we accept at this
+     * point is a connection request.
+     */
+    if (buffer->tcp().flag_syn () && !buffer->tcp().flag_ack ()) { // connection request
+      is_busy (true);
+
+      remote = buffer->ip().source ();
+
+      port_remote = buffer->tcp().source ();
+
+      tcp.ack_no = buffer->tcp().seq_no ();
+
+      tcp_send_syn_ack (true); // let update() handle it
+
+      IP_Manager::manager().add_to_spares (buffer);
+      return true;
+    }
+    // not a connection request; reject
+    return false;
+  }
+
+  /* we have a remote port that is non-zero, and incoming packets must match 
+   */
+  if (buffer->tcp().source () != port_remote) { // remote port mismatch
+    return false;
+  }
+  if (buffer->ip().source () != remote) { // remote address mismatch
+    return false;
+  }
+  DEBUG_PRINT ("IP_Connection::accept_tcp: remote matched\n");
+  /* Strictly speaking, this isn't a TCP requirement, but we're going to
+   * enforce it.
+   */
+  if (buffer->tcp().ack_no() == tcp.seq_no) {
+
+    if (buffer->tcp().flag_syn () && buffer->tcp().flag_ack ()) {
+      if (tcp_syn_sent ()) {
+	DEBUG_PRINT ("This is a response to a SYN we sent.\n");
+
+	/* This is a response to a SYN we sent.
+	 */
+	buffer_tcp->unref ();
+	IP_Manager::manager().add_to_spares (buffer_tcp);
+	buffer_tcp = 0;
+
+	tcp.ack_no = buffer->tcp().seq_no ();
+	tcp.ack_no++;
+
+	timeout_set (false);
+
+	tcp_syn_sent (false);
+	tcp_send_ack (true); // let update() handle it
+
+	is_open (true);
+
+	return true;
+      }
+    }
+
+    if (buffer->tcp().flag_ack ()) {
+      if (tcp_syn_ack_sent ()) {
+	DEBUG_PRINT ("This is a response to a SYN-ACK we sent.\n");
+
+	/* This is a response to a SYN we sent.
+	 */
+	buffer_tcp->unref ();
+	IP_Manager::manager().add_to_spares (buffer_tcp);
+	buffer_tcp = 0;
+
+	timeout_set (false);
+
+	tcp_syn_ack_sent (false);
+
+	is_open (true);
+
+	return true;
+      }
+    }
+  }
+
+  // unexpected, or packet re-sent; send an ack  
+  tcp_send_ack (true); // let update() handle it
+
+  IP_Manager::manager().add_to_spares (buffer);
+  return true;
+#if 0
   bool bAcknowledge = false;
 
   if (EL) { // we have an event listener
@@ -277,6 +449,7 @@ bool IP_Connection::accept_tcp (IP_Buffer * buffer, bool bNewConnection) {
   }
   // FIXME!!!
   return true;
+#endif
 }
 
 bool IP_Connection::accept_udp (IP_Buffer * buffer) {
@@ -305,7 +478,7 @@ bool IP_Connection::accept_udp (IP_Buffer * buffer) {
 }
 
 bool IP_Connection::accept (IP_Buffer * buffer) {
-  if (!is_open () || buffer_in || !port_local) {
+  if (buffer_in || !port_local) {
     return false;
   }
 
@@ -316,20 +489,18 @@ bool IP_Connection::accept (IP_Buffer * buffer) {
     if (buffer->tcp().destination () != port_local) { // local port mismatch
       return false;
     }
-    if (has_remote ()) { // make sure remote address & port match
-      if (buffer->tcp().source () != port_remote) { // remote port mismatch
-	return false;
-      }
-      if (buffer->ip().source () != remote) { // remote address mismatch
-	return false;
-      }
-      return accept_tcp (buffer, false);
+    if (!is_open () && !is_busy () && !tcp_server ()) {
+      // we're in client mode, and not accepting incoming packets
+      return false;
     }
-    return accept_tcp (buffer, true); // need to establish connection
+    return accept_tcp (buffer);
   }
 
   // Not TCP so should be UDP
 
+  if (!is_open () || is_busy ()) {
+    return false;
+  }
   if (!buffer->ip().is_UDP ()) { // incoming stream isn't UDP
     return false;
   }
@@ -348,58 +519,61 @@ bool IP_Connection::accept (IP_Buffer * buffer) {
 }
 
 void IP_Connection::connect (const IP_Address & address, u16_t port) {
-  if (is_open ()) {
+  if (is_open () || is_busy () || tcp_server ()) {
     return;
   }
+  if (!port) { // not allowed to connect to port 0
+    has_remote (false);
+    return;
+  }
+  has_remote (true);
+
+  port_remote = port;
+  remote = address;
 
   if (is_TCP ()) {
+    if (port_local) { // need a non-zero local port to establish a TCP connection
 
-#if 0
-  if (tcp.tcpstateflags != UIP_CLOSED) {
-    return false;
-  }
-  if (tcp.tcpstateflags == UIP_TIME_WAIT) {
-    // TODO: then... ??
-#if 0// UIP_ACTIVE_OPEN
-    if(cconn->tcpstateflags == UIP_TIME_WAIT) {
-      if(conn == 0 ||
-	 cconn->timer > conn->timer) {
-	conn = cconn;
-      }
+      tcp_reset_flags ();
+      tcp_send_syn (true);
+
+      is_busy (true);
+
+      // let update() && accept_tcp() manage the connection
     }
-#endif /* UIP_ACTIVE_OPEN */
+  } else { // UDP
+    open ();
   }
+}
 
-  // mac = mac;
-  // remote = address;
-  // port_remote = port;
+void IP_Connection::tcp_prepare (IP_Buffer * buffer) {
+  buffer->channel (0);
 
-  tcp.mss_initial   = IP_TCP_MaxSegmentSize;
-  tcp.tcpstateflags = UIP_SYN_SENT;
+  buffer->defaults (p_TCP);
 
-  tcp.timer  = 1; /* Send the SYN next time around. */
-  tcp.length = 1; /* TCP length of the SYN is one. */
+  buffer->ip().destination() = remote;
 
-  tcp.rcv_nxt = 0;
-  tcp.snd_nxt = IP_Manager::manager().iss ();
+  buffer->tcp().source() = port_local;
+  buffer->tcp().destination() = port_remote;
+}
 
-  tcp.nrtx = 0;
-  tcp.rto = UIP_RTO;
-  tcp.sa = 0;
-  tcp.sv = 16;   /* Initial value of the RTT variance. */
+bool IP_Connection::tcp_ack () {
+  DEBUG_PRINT ("IP_Connection::tcp_ack: send ACK\n");
+  IP_Buffer * buffer = IP_Manager::manager().get_from_spares ();
+
+  if (buffer) {
+    tcp_prepare (buffer);
+
+    buffer->tcp().flag_ack (true);
+
+    buffer->tcp().seq_no() = tcp.seq_no;
+    buffer->tcp().ack_no() = tcp.ack_no;
+
+    buffer->tcp_finalise ();
+
+    IP_Manager::manager().forward (buffer); // send it
 
     return true;
-#endif
-
-  } else { // UDP
-
-    if (port) {
-      flags |= IP_Connection_RemoteSpecified;
-
-      remote = address;
-      port_remote = port;
-
-      open ();
-    }
   }
+  return false;
 }

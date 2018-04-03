@@ -42,7 +42,7 @@ IP_Manager::IP_Manager () :
   ticker(0)
 {
   for (int i = 0; i < IP_Buffer_Extras; i++) {
-    chain_buffers_spare.chain_prepend (buffers + i);
+    add_to_spares (buffers + i);
   }
 
   timer.start (*this, ping_interval); // we'll adjust this later

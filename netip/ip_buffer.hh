@@ -161,6 +161,7 @@ public:
 
   HeaderSniff sniff () const;
 
+  void tcp_finalise ();
   void udp_finalise ();
 private:
   void icmp_finalise ();

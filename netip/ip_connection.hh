@@ -63,6 +63,7 @@ private:
   IP_Timer     timer;
 
   IP_Buffer * buffer_in;
+  IP_Buffer * buffer_tcp;
 
   u16_t data_in_offset;
   u16_t data_in_length;
@@ -110,6 +111,15 @@ private:
     u8_t nrtx;          /**< The number of retransmissions for the last segment sent. */
   } tcp;
 #endif
+  struct {
+    u32_t seq_no;
+    u32_t ack_no;
+
+    u32_t send_time;
+
+    u8_t attempts;
+  } tcp;
+
   IP_Address remote;
 
   ns16_t port_local;    // port 0 is reserved; can't send to or receive at; it can be used as a do-not-reply
@@ -117,13 +127,106 @@ private:
 
   u16_t flags; // internal flags
 
-#define IP_Connection_Open             0x8000
-#define IP_Connection_Busy             0x4000
-#define IP_Connection_Protocol_TCP     0x2000
-#define IP_Connection_RemoteSpecified  0x1000
-#define IP_Connection_TimeoutSet       0x0800
+  inline void tcp_reset_flags () {
+    flags &= ~IP_TCP_Mask;
+  }
+  inline void tcp_server (bool bState) {
+    if (bState) {
+      flags |=  IP_TCP_Server;
+    } else {
+      flags &= ~IP_TCP_Server;
+    }      
+  }
+  inline void tcp_send_syn (bool bState) {
+    if (bState) {
+      flags |=  IP_TCP_SendSyn;
+    } else {
+      flags &= ~IP_TCP_SendSyn;
+    }      
+  }
+  inline void tcp_send_syn_ack (bool bState) {
+    if (bState) {
+      flags |=  IP_TCP_SendSynAck;
+    } else {
+      flags &= ~IP_TCP_SendSynAck;
+    }      
+  }
+  inline void tcp_send_ack (bool bState) {
+    if (bState) {
+      flags |=  IP_TCP_SendAck;
+    } else {
+      flags &= ~IP_TCP_SendAck;
+    }
+  }
+  inline void tcp_syn_sent (bool bState) {
+    if (bState) {
+      flags |=  IP_TCP_SynSent;
+    } else {
+      flags &= ~IP_TCP_SynSent;
+    }      
+  }
+  inline void tcp_syn_ack_sent (bool bState) {
+    if (bState) {
+      flags |=  IP_TCP_SynAckSent;
+    } else {
+      flags &= ~IP_TCP_SynAckSent;
+    }      
+  }
 
+  inline void is_open (bool bState) {
+    if (bState) {
+      flags |=  IP_Connection_Open;
+    } else {
+      flags &= ~IP_Connection_Open;
+    }      
+  }
+  inline void is_busy (bool bState) {
+    if (bState) {
+      flags |=  IP_Connection_Busy;
+    } else {
+      flags &= ~IP_Connection_Busy;
+    }      
+  }
+  inline void is_TCP (bool bState) {
+    if (bState) {
+      flags |=  IP_Connection_Protocol_TCP;
+    } else {
+      flags &= ~IP_Connection_Protocol_TCP;
+    }      
+  }
+  inline void has_remote (bool bState) {
+    if (bState) {
+      flags |=  IP_Connection_RemoteSpecified;
+    } else {
+      flags &= ~IP_Connection_RemoteSpecified;
+    }      
+  }
+  inline void timeout_set (bool bState) {
+    if (bState) {
+      flags |=  IP_Connection_TimeoutSet;
+    } else {
+      flags &= ~IP_Connection_TimeoutSet;
+    }      
+  }
 public:
+  inline bool tcp_server () const {
+    return (flags & IP_TCP_Server);
+  }
+  inline bool tcp_send_syn () const {
+    return (flags & IP_TCP_SendSyn);
+  }
+  inline bool tcp_send_syn_ack () const {
+    return (flags & IP_TCP_SendSynAck);
+  }
+  inline bool tcp_send_ack () const {
+    return (flags & IP_TCP_SendAck);
+  }
+  inline bool tcp_syn_sent () const {
+    return (flags & IP_TCP_SynSent);
+  }
+  inline bool tcp_syn_ack_sent () const {
+    return (flags & IP_TCP_SynAckSent);
+  }
   inline bool is_open () const {
     return (flags & IP_Connection_Open);
   }
@@ -157,6 +260,7 @@ public:
   IP_Connection (IP_Protocol p = p_TCP, u16_t port = 0) :
     timer(this),
     buffer_in(0),
+    buffer_tcp(0),
     fifo_read(fifo_read_buffer, IP_Connection_FIFO),
     fifo_write(fifo_write_buffer, IP_Connection_FIFO),
     EL(0),
@@ -181,11 +285,7 @@ public:
 
   void update (); // internal management of connection & buffers - call frequently!
 
-private:
-  bool open_tcp ();
-  bool open_udp ();
-public:
-  /* Note: Open connection
+  /* Note: Open connection - UDP only; use connect for TCP
    */
   bool open ();
 
@@ -202,7 +302,10 @@ public:
   }
 
 private:
-  bool accept_tcp (IP_Buffer * buffer, bool bNewConnection);
+  void tcp_prepare (IP_Buffer * buffer);
+  bool tcp_ack ();
+
+  bool accept_tcp (IP_Buffer * buffer);
   bool accept_udp (IP_Buffer * buffer);
 public:
   /* Note: Returns true if the connection can & will handle the incoming buffer

@@ -72,6 +72,10 @@ void setup () {
   IP_SerialChannel ser0(Serial);
   IP.channel_add (&ser0);
 
+  IP_Connection tcp(p_TCP, 0xBCCC);
+  IP.connection_add (&tcp);
+  tcp.open ();
+
   IP_Connection udp(p_UDP, IP.available_port ());
   IP.connection_add (&udp);
 

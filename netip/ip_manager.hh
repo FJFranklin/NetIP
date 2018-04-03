@@ -47,8 +47,6 @@ private:
 
   u16_t  last_port; // counter for generating free port numbers
 
-  ns32_t tcp_iss;   // TCP initial sequence number // TODO - is this used/needed?
-
   u8_t   ticker;    // internal cooperative management
 
 public:
@@ -62,10 +60,6 @@ public:
 
   ~IP_Manager () {
     // ...
-  }
-
-  inline const ns32_t & iss () const {
-    return tcp_iss;
   }
 
   inline void connection_add (IP_Connection * connection) {
@@ -97,6 +91,7 @@ public:
    * adds a free buffer to the spares
    */
   inline void add_to_spares (IP_Buffer * buffer) {
+    DEBUG_PRINT ("add_to_spares ()\n");
     chain_buffers_spare.chain_prepend (buffer);
   }
 
@@ -104,6 +99,7 @@ public:
    * gets a free buffer from the spares - if there are any
    */
   inline IP_Buffer * get_from_spares () {
+    DEBUG_PRINT ("get_from_spares ()\n");
     return chain_buffers_spare.chain_pop ();
   }
 

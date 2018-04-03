@@ -577,7 +577,7 @@ struct IP_Header_TCP {
   inline void defaults () {
     clear ();
     set_data_offset (5);
-    window_size () = IP_TCP_MaxSegmentSize; // ??
+    window_size() = IP_TCP_MaxDataSize;
   }
 
   inline void header (Check16 & check) const {

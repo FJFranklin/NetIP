@@ -211,16 +211,24 @@ int main (int argc, char ** argv) {
   IP_SerialChannel ser0(device);
   IP.channel_add (&ser0);
 
-  IP_Connection con;
-  IP.connection_add (&con);
+  // IP_Connection con;
+  // IP.connection_add (&con);
 
-  IP_Connection udp(p_UDP, 0xBCCB);
-  IP.connection_add (&udp);
+  // IP_Connection udp(p_UDP, 0xBCCB);
+  // IP.connection_add (&udp);
 
-  Uino uino(&udp, bTesting);
+  IP_Connection tcp_server(p_TCP, 0xBCCC);
+  IP.connection_add (&tcp_server);
+  tcp_server.open (); // enable server mode
 
-  IP_Timer timer(&uino); // set up a periodic callback
-  timer.start (IP, 10);  // once every 10 milliseconds
+  IP_Connection tcp_client(p_TCP, IP.available_port ());
+  IP.connection_add (&tcp_client);
+  tcp_client.connect (IP.host, 0xBCCC);
+
+  // Uino uino(&udp, bTesting);
+
+  // IP_Timer timer(&uino); // set up a periodic callback
+  // timer.start (IP, 10);  // once every 10 milliseconds
 
   IP.run (); // runs forever
 

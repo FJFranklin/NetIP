@@ -26,9 +26,8 @@
 
 #include "ip_config.hh"
 
-#define IP_Buffer_SafeSize    (IP_Buffer_WordCount * 2 - 2) // UIP_BUFSIZE // uip_buf: The packet buffer that contains incoming packets. // Why -2?
-
-/* Header sizes. */
+/* Header sizes
+ */
 #define IP_Header_Length_IPv6 40
 #define IP_Header_Length_IPv4 20
 #define IP_Header_Length_UDP   8
@@ -51,7 +50,23 @@
 
 /* Maximum data length for TCP/IP connections
  */
-#define IP_TCP_MaxSegmentSize  (IP_Buffer_SafeSize - IP_Header_TCP_IP)
+#define IP_TCP_MaxDataSize     (IP_Buffer_WordCount * 2 - IP_Header_TCP_IP)
+
+/* Connection flags
+ */
+#define IP_Connection_Open             0x8000
+#define IP_Connection_Busy             0x4000
+#define IP_Connection_Protocol_TCP     0x2000
+#define IP_Connection_RemoteSpecified  0x1000
+#define IP_Connection_TimeoutSet       0x0800
+
+#define IP_TCP_Mask                    0x01FF
+#define IP_TCP_Server                  0x0100
+#define IP_TCP_SendSyn                 0x0080
+#define IP_TCP_SendSynAck              0x0040
+#define IP_TCP_SendAck                 0x0020
+#define IP_TCP_SynSent                 0x0010
+#define IP_TCP_SynAckSent              0x0008
 
 /*
  * ======== uIP definitions ========
