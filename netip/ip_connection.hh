@@ -50,9 +50,9 @@ public:
      */
     virtual bool buffer_to_send (const IP_Connection & connection, IP_Buffer & buffer) = 0;
 
-    virtual void connection_has_opened () = 0;
+    virtual void connection_has_opened (const IP_Connection & connection) = 0;
 
-    virtual void connection_has_closed () = 0;
+    virtual void connection_has_closed (const IP_Connection & connection) = 0;
 
     virtual ~EventListener () {
       // ...

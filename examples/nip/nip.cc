@@ -35,50 +35,103 @@ private:
   u8_t buffer[32];
 
   IP_Connection * udp;
+  IP_Connection * tcp_server;
+  IP_Connection * tcp_client;
 
   u8_t number;
 
   bool bTesting;
   bool bOn;
-  bool bConnected;
+  bool bFirst;
+  bool bConnected_UDP;
+  bool bConnected_TCP_Server;
+  bool bConnected_TCP_Client;
 
 public:
-  Uino (IP_Connection * con, bool bTest) :
+  Uino (IP_Connection * con, IP_Connection * server, IP_Connection * client, bool bTest) :
     udp(con),
+    tcp_server(server),
+    tcp_client(client),
     number(0),
     bTesting(bTest),
     bOn(false),
-    bConnected(false)
+    bFirst(true),
+    bConnected_UDP(false),
+    bConnected_TCP_Server(false),
+    bConnected_TCP_Client(false)
   {
     udp->set_event_listener (this);
     udp->open (); // just listen; don't connect
+
+    tcp_server->set_event_listener (this);
+    tcp_server->open (); // just listen; don't connect
+
+    tcp_client->set_event_listener (this);
   }
 
-  virtual void connection_has_opened () {
-    bConnected = true;
+  virtual void connection_has_opened (const IP_Connection & connection) {
+    if (connection.is_TCP ()) {
+      if (connection.tcp_server ()) {
+	fprintf (stderr, "TCP Server: Connection open!\n");
+	bConnected_TCP_Server = true;
+      } else {
+	fprintf (stderr, "TCP Client: Connection open!\n");
+	bConnected_TCP_Client = true;
+      }
+    } else {
+      bConnected_UDP = true;
+    }
   }
 
-  virtual void connection_has_closed () {
-    bConnected = false;
+  virtual void connection_has_closed (const IP_Connection & connection) {
+    if (connection.is_TCP ()) {
+      if (connection.tcp_server ()) {
+	bConnected_TCP_Server = false;
+      } else {
+	bConnected_TCP_Client = false;
+      }
+    } else {
+      bConnected_UDP = false;
+    }
   }
 
   virtual bool buffer_received (const IP_Connection & connection, const IP_Buffer & buffer_incoming) {
-    u16_t offset = buffer_incoming.udp_data_offset ();
-    u16_t length = buffer_incoming.udp_data_length ();
-#if 0
-    fprintf (stderr, "==========> \"");
+    bool bHandled = false;
 
-    for (u16_t c = 0; c < length; c++) {
-      fputc (buffer_incoming[offset+c], stderr);
-    }
-    fprintf (stderr, "\"\n");
+    if (connection.is_TCP ()) {
+      if (connection.tcp_server ()) {
+	// ...
+      } else {
+	// ...
+      }
+    } else {
+      u16_t offset = buffer_incoming.udp_data_offset ();
+      u16_t length = buffer_incoming.udp_data_length ();
+#if 0
+      fprintf (stderr, "==========> \"");
+
+      for (u16_t c = 0; c < length; c++) {
+	fputc (buffer_incoming[offset+c], stderr);
+      }
+      fprintf (stderr, "\"\n");
 #endif
-    // ...
-    return false; // we don't handle these
+    }
+    return bHandled; // we don't handle these
   }
+
   virtual bool buffer_to_send (const IP_Connection & connection, IP_Buffer & buffer_outgoing) {
-    // ...
-    return false; // we don't handle these
+    bool bHandled = false;
+
+    if (connection.is_TCP ()) {
+      if (connection.tcp_server ()) {
+	// ...
+      } else {
+	// ...
+      }
+    } else {
+      // ...
+    }
+    return bHandled; // we don't handle these
   }
 
   void test (const char * info, const u8_t * buffer, u16_t length) {
@@ -139,8 +192,15 @@ public:
   }
 
   virtual bool timeout () {
-    if (false /* !bConnected */) {
-      udp->connect (IP_Manager::manager().gateway, 0xBCCB); // 48331 (in the range 48130-48555 currently unassigned by IANA)
+    if (bFirst) {
+      bFirst = false;
+
+      IP_Address device;
+      device = IP_Manager::manager().host;
+      device.set_local_network_id (0x77);
+
+      udp->connect (device, 0xBCCB);        // 48331 (in the range 48130-48555 currently unassigned by IANA)
+      tcp_client->connect (device, 0xBCCB);
     }
 
     if (bOn) {
@@ -211,24 +271,19 @@ int main (int argc, char ** argv) {
   IP_SerialChannel ser0(device);
   IP.channel_add (&ser0);
 
-  // IP_Connection con;
-  // IP.connection_add (&con);
+  IP_Connection udp(p_UDP, 0xBCCB);
+  IP.connection_add (&udp);
 
-  // IP_Connection udp(p_UDP, 0xBCCB);
-  // IP.connection_add (&udp);
-
-  IP_Connection tcp_server(p_TCP, 0xBCCC);
+  IP_Connection tcp_server(p_TCP, 0xBCCB);
   IP.connection_add (&tcp_server);
-  tcp_server.open (); // enable server mode
 
   IP_Connection tcp_client(p_TCP, IP.available_port ());
   IP.connection_add (&tcp_client);
-  tcp_client.connect (IP.host, 0xBCCC);
 
-  // Uino uino(&udp, bTesting);
+  Uino uino(&udp, &tcp_server, &tcp_client, bTesting);
 
-  // IP_Timer timer(&uino); // set up a periodic callback
-  // timer.start (IP, 10);  // once every 10 milliseconds
+  IP_Timer timer(&uino); // set up a periodic callback
+  timer.start (IP, 10);  // once every 10 milliseconds
 
   IP.run (); // runs forever
 

@@ -149,8 +149,8 @@ void IP_Connection::update () {
 
 	    tcp.seq_no = IP_Manager::manager().milliseconds (); // just a random (-ish) number
 
-	    buffer_tcp->tcp().seq_no() =   tcp.seq_no++;
-	    buffer_tcp->tcp().ack_no() = ++tcp.ack_no;
+	    buffer_tcp->tcp().seq_no() = tcp.seq_no++;
+	    buffer_tcp->tcp().ack_no() = tcp.ack_no;
 
 	    buffer_tcp->tcp().flag_syn (true);
 	    buffer_tcp->tcp().flag_ack (true);
@@ -180,7 +180,7 @@ void IP_Connection::update () {
 	is_busy (false);
 
 	if (EL) {
-	  EL->connection_has_closed ();
+	  EL->connection_has_closed (*this);
 	}
       } else {
 	if (!fifo_write.is_empty ()) { // finish writing the buffered output
@@ -205,7 +205,7 @@ void IP_Connection::update () {
 	  is_busy (false);
 
 	  if (EL) {
-	    EL->connection_has_closed ();
+	    EL->connection_has_closed (*this);
 	  }
 	}
       }
@@ -295,7 +295,7 @@ bool IP_Connection::open () {
     is_open (true);
 
     if (EL) {
-      EL->connection_has_opened ();
+      EL->connection_has_opened (*this);
     }
     return true;
   }
@@ -325,9 +325,9 @@ bool IP_Connection::timeout () { // return true if the timer should be reset & r
     return false;
   }
   if (tcp_syn_sent ()) {
-    fprintf (stderr, "timeout while sending SYN.\n");
+    DEBUG_PRINT ("timeout while sending SYN.\n");
   } else {
-    fprintf (stderr, "other timeout (unhandled).\n");
+    DEBUG_PRINT ("other timeout (unhandled).\n");
   }
   return false;
 }
@@ -347,13 +347,15 @@ bool IP_Connection::accept_tcp (IP_Buffer * buffer) {
      * point is a connection request.
      */
     if (buffer->tcp().flag_syn () && !buffer->tcp().flag_ack ()) { // connection request
+      DEBUG_PRINT ("IP_Connection::accept_tcp: !has_remote() - connection request\n");
       is_busy (true);
 
       remote = buffer->ip().source ();
-
       port_remote = buffer->tcp().source ();
+      has_remote (true);
 
       tcp.ack_no = buffer->tcp().seq_no ();
+      tcp.ack_no++;
 
       tcp_send_syn_ack (true); // let update() handle it
 
@@ -397,7 +399,11 @@ bool IP_Connection::accept_tcp (IP_Buffer * buffer) {
 	tcp_send_ack (true); // let update() handle it
 
 	is_open (true);
+	if (EL) {
+	  EL->connection_has_opened (*this);
+	}
 
+	IP_Manager::manager().add_to_spares (buffer);
 	return true;
       }
     }
@@ -417,14 +423,23 @@ bool IP_Connection::accept_tcp (IP_Buffer * buffer) {
 	tcp_syn_ack_sent (false);
 
 	is_open (true);
+	if (EL) {
+	  EL->connection_has_opened (*this);
+	}
 
+	IP_Manager::manager().add_to_spares (buffer);
 	return true;
       }
     }
+    DEBUG_PRINT ("(unhandled)\n");
+  } else {
+    DEBUG_PRINT ("(ack != seq)\n");
   }
 
-  // unexpected, or packet re-sent; send an ack  
-  tcp_send_ack (true); // let update() handle it
+  // unexpected, or packet re-sent; send an ack
+  if (is_open ()) {
+    tcp_send_ack (true); // let update() handle it
+  }
 
   IP_Manager::manager().add_to_spares (buffer);
   return true;
