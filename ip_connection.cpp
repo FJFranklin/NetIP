@@ -326,6 +326,19 @@ bool IP_Connection::timeout () { // return true if the timer should be reset & r
   }
   if (tcp_syn_sent ()) {
     DEBUG_PRINT ("timeout while sending SYN.\n");
+    if (true /* tcp.attempts < 8 */) {
+      tcp_send_syn (true);
+      return true; // reset timer with same interval
+    }
+    reset (p_TCP, port_local);
+  } else if (tcp_syn_ack_sent ()) {
+    DEBUG_PRINT ("timeout while sending SYN-ACK.\n");
+    if (true /* tcp.attempts < 8 */) {
+      tcp_send_syn_ack (true);
+      return true; // reset timer with same interval
+    }
+    reset (p_TCP, port_local);
+    open (); // we're in server mode
   } else {
     DEBUG_PRINT ("other timeout (unhandled).\n");
   }
@@ -412,7 +425,7 @@ bool IP_Connection::accept_tcp (IP_Buffer * buffer) {
       if (tcp_syn_ack_sent ()) {
 	DEBUG_PRINT ("This is a response to a SYN-ACK we sent.\n");
 
-	/* This is a response to a SYN we sent.
+	/* This is a response to a SYN-ACK we sent.
 	 */
 	buffer_tcp->unref ();
 	IP_Manager::manager().add_to_spares (buffer_tcp);
@@ -434,11 +447,11 @@ bool IP_Connection::accept_tcp (IP_Buffer * buffer) {
     DEBUG_PRINT ("(unhandled)\n");
   } else {
     DEBUG_PRINT ("(ack != seq)\n");
-  }
 
-  // unexpected, or packet re-sent; send an ack
-  if (is_open ()) {
-    tcp_send_ack (true); // let update() handle it
+    // unexpected, or packet re-sent; send an ack
+    if (is_open ()) {
+      tcp_send_ack (true); // let update() handle it
+    }
   }
 
   IP_Manager::manager().add_to_spares (buffer);

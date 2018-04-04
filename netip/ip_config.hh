@@ -40,7 +40,7 @@
 #include "unix/ip_arch.hh"
 #endif
 #if IP_ARCH_ARDUINO
-#define IP_DEBUG    0
+#define IP_DEBUG    1
 #include "arduino/ip_arch.hh"
 #endif
 
@@ -59,7 +59,7 @@
 /* parameters affecting memory use
  */
 #define IP_Buffer_WordCount  64   // buffer size in (2-byte) words; one included per channel - affects TCP/IP data size
-#define IP_Buffer_Extras      4   // how many extra buffers (1 minimum) to use to increase flexibility and responsiveness
+#define IP_Buffer_Extras      8   // how many extra buffers (1 minimum) to use to increase flexibility and responsiveness
 #define IP_Connection_FIFO   32   // size of FIFO in bytes per connection
 
 /* networking parameters

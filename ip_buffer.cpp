@@ -41,7 +41,7 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
   u16_t payload_offset;
   u16_t payload_length;
 
-  DEBUG_PRINT ("IP_Buffer::sniff\n");
+  // DEBUG_PRINT ("IP_Buffer::sniff\n");
 
 #if IP_USE_IPv6
   DEBUG_PRINT ("IP_Buffer::sniff: IPv6\n");
@@ -61,7 +61,7 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
   payload_length = ip().length ();
 
 #else // IP_USE_IPv6
-  DEBUG_PRINT ("IP_Buffer::sniff: IPv4\n");
+  // DEBUG_PRINT ("IP_Buffer::sniff: IPv4\n");
   if (version == 6) {
     return hs_IPv6;
   }
@@ -102,7 +102,7 @@ IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
   /* Protocol
    */
   if (ip().is_ICMP ()) {
-    DEBUG_PRINT ("IP_Buffer::sniff: ICMP\n");
+    // DEBUG_PRINT ("IP_Buffer::sniff: ICMP\n");
     if (payload_length < 8) { // minimum size of ICMP header
       DEBUG_PRINT ("IP_Buffer::sniff: ICMP: Too Short\n");
       return hs_Protocol_PacketTooShort;

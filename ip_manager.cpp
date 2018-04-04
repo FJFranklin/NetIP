@@ -137,7 +137,7 @@ bool IP_Manager::queue (IP_Buffer *& buffer) {
 }
 
 void IP_Manager::broadcast (IP_Buffer * buffer) {
-  DEBUG_PRINT("IP_Manager::broadcast\n");
+  // DEBUG_PRINT("IP_Manager::broadcast\n");
   u8_t channel_origin = buffer->channel ();
 
   bool bEndOfLine = true;
@@ -157,7 +157,7 @@ void IP_Manager::broadcast (IP_Buffer * buffer) {
 }
 
 void IP_Manager::forward (IP_Buffer * buffer) {
-  DEBUG_PRINT("IP_Manager::forward\n");
+  // DEBUG_PRINT("IP_Manager::forward\n");
   u8_t channel_number;
 
   IP_Channel * ch = 0;
@@ -290,11 +290,11 @@ void IP_Manager::tick () {
       IP_Buffer * pending = chain_buffers_pending.chain_pop ();
 
       if (pending) {
-	DEBUG_PRINT("IP_Manager::tick: pending\n");
+	// DEBUG_PRINT("IP_Manager::tick: pending\n");
 	switch (pending->sniff ()) {
 
 	case IP_Buffer::hs_Okay:
-	  DEBUG_PRINT("IP_Manager::tick: pending: Okay\n");
+	  // DEBUG_PRINT("IP_Manager::tick: pending: Okay\n");
 	  register_source (pending->channel (), pending->ip().source ());
 
 	  if (pending->ip().destination () == host) { // it's for us
@@ -305,9 +305,9 @@ void IP_Manager::tick () {
 	  break;
 
 	case IP_Buffer::hs_EchoRequest:
-	  DEBUG_PRINT("IP_Manager::tick: Echo Request\n");
+	  // DEBUG_PRINT("IP_Manager::tick: Echo Request\n");
 	  register_source (pending->channel (), pending->ip().source ());
-
+	  // pending->print ();
 	  if (pending->ip().destination () == host) { // it's for us; we don't respond to broadcast pings
 	    pending->ping_to_pong ();
 	    forward (pending);
@@ -385,7 +385,7 @@ void IP_Manager::every_second () {
 }
 
 bool IP_Manager::timeout () {
-  DEBUG_PRINT ("IP_Manager::timeout\n");
+  // DEBUG_PRINT ("IP_Manager::timeout\n");
   if (ping_interval == 1) {
     ping_interval = 1000 + 4 * (u16_t) host.local_network_id (); // set interval between 1 & 2 seconds
     timer.start (*this, ping_interval);

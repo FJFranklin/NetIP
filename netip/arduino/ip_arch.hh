@@ -35,7 +35,9 @@ typedef unsigned long  u32_t;
 /* For debugging, just output to Serial
  */
 #if IP_DEBUG
-#define DEBUG_PRINT(x) Serial.print (x)
+// #define DEBUG_PRINT(x) Serial.print (x)
+extern void uino_print (const char * str);
+#define DEBUG_PRINT(x) uino_print (x)
 #else
 #define DEBUG_PRINT(x) while (false)
 #endif

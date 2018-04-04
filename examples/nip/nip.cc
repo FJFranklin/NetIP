@@ -107,14 +107,15 @@ public:
     } else {
       u16_t offset = buffer_incoming.udp_data_offset ();
       u16_t length = buffer_incoming.udp_data_length ();
-#if 0
+
       fprintf (stderr, "==========> \"");
 
       for (u16_t c = 0; c < length; c++) {
 	fputc (buffer_incoming[offset+c], stderr);
       }
       fprintf (stderr, "\"\n");
-#endif
+
+      bHandled = true;
     }
     return bHandled; // we don't handle these
   }
@@ -197,10 +198,9 @@ public:
 
       IP_Address device;
       device = IP_Manager::manager().host;
-      device.set_local_network_id (0x77);
+      device.set_local_network_id (0x0a); // 0x77 for the UNO
 
-      udp->connect (device, 0xBCCB);        // 48331 (in the range 48130-48555 currently unassigned by IANA)
-      tcp_client->connect (device, 0xBCCB);
+      tcp_client->connect (device, 0xBCCB); // 48331 (in the range 48130-48555 currently unassigned by IANA)
     }
 
     if (bOn) {

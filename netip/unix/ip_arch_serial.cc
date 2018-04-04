@@ -38,7 +38,7 @@ IP_SerialChannel::IP_SerialChannel (const char * device_name) :
     fprintf (stderr, "Failed to open \"%s\" - exiting.\n", device_name);
     return;
   }
-
+#if 0
   struct termios options;
 
   tcgetattr (device_fd, &options);
@@ -53,7 +53,7 @@ IP_SerialChannel::IP_SerialChannel (const char * device_name) :
 
   tcflush (device_fd, TCIFLUSH);
   tcsetattr (device_fd, TCSANOW, &options);
-
+#endif
   u8_t byte;
 
   while (read (device_fd, &byte, 1) > 0) {
@@ -104,6 +104,7 @@ void IP_SerialChannel::update () {
     } else if (count == 0) {
       break;
     }
+    // fprintf (stderr, "{%02x}", (unsigned) byte);
     slip_receive (byte);
   }
 }
