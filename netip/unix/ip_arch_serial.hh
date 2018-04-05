@@ -29,7 +29,7 @@ private:
   int device_fd;
 
 public:
-  IP_SerialChannel (const char * device_name);
+  IP_SerialChannel (const char * device_name, bool bFixBaud = false);
 
   virtual ~IP_SerialChannel ();
 

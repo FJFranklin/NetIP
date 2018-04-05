@@ -106,30 +106,29 @@ void IP_Connection::update () {
 	DEBUG_PRINT ("IP_Connection::update: send SYN\n");
 	if (!buffer_tcp) {    // we haven't send a SYN yet
 	  buffer_tcp = IP_Manager::manager().get_from_spares ();
-	  buffer_tcp->ref (); // don't return to spares after sending
-	}
-	if (buffer_tcp) {     // set up a new connection
-	  if (!tcp_syn_sent ()) { // this is the very first attempt
+
+	  if (buffer_tcp) {
+	    buffer_tcp->ref (); // don't return to spares after sending
+
+	    tcp.attempts  = 0;
+	    tcp.send_time = IP_Manager::manager().milliseconds ();
+	    tcp.seq_no    = tcp.send_time; // just a random (-ish) number
+
 	    tcp_prepare (buffer_tcp);
 
 	    buffer_tcp->tcp().flag_syn (true);
 
-	    tcp.seq_no = IP_Manager::manager().milliseconds (); // just a random (-ish) number
-
 	    buffer_tcp->tcp().seq_no() = tcp.seq_no++;
 
 	    buffer_tcp->tcp_finalise ();
-
-	    tcp.attempts = 1;
-	    tcp.send_time = tcp.seq_no;
-	  } else {
-	    tcp.attempts++;
-	    tcp.send_time = IP_Manager::manager().milliseconds ();
 	  }
+	}
+	if (buffer_tcp) { // set up a new connection
+	  ++tcp.attempts;
 
 	  IP_Manager::manager().forward (buffer_tcp); // send it
 
-	  timer.start (IP_Manager::manager (), 500); // TODO: 500?
+	  timer.start (IP_Manager::manager (), 499); // TODO: 500?
 	  timeout_set (true);
 
 	  tcp_send_syn (false);
@@ -141,32 +140,31 @@ void IP_Connection::update () {
 	DEBUG_PRINT ("IP_Connection::update: send SYN-ACK\n");
 	if (!buffer_tcp) {        // we haven't send a SYN ACK yet
 	  buffer_tcp = IP_Manager::manager().get_from_spares ();
-	  buffer_tcp->ref ();     // don't return to spares after sending
-	}
-	if (buffer_tcp) {         // respond to a new connection
-	  if (!tcp_syn_ack_sent ()) { // this is the very first attempt
+
+	  if (buffer_tcp) {
+	    buffer_tcp->ref ();   // don't return to spares after sending
+
+	    tcp.attempts  = 0;
+	    tcp.send_time = IP_Manager::manager().milliseconds ();
+	    tcp.seq_no    = tcp.send_time; // just a random (-ish) number
+
 	    tcp_prepare (buffer_tcp);
-
-	    tcp.seq_no = IP_Manager::manager().milliseconds (); // just a random (-ish) number
-
-	    buffer_tcp->tcp().seq_no() = tcp.seq_no++;
-	    buffer_tcp->tcp().ack_no() = tcp.ack_no;
 
 	    buffer_tcp->tcp().flag_syn (true);
 	    buffer_tcp->tcp().flag_ack (true);
 
-	    buffer_tcp->tcp_finalise ();
+	    buffer_tcp->tcp().seq_no() = tcp.seq_no++;
+	    buffer_tcp->tcp().ack_no() = tcp.ack_no;
 
-	    tcp.attempts = 1;
-	    tcp.send_time = tcp.seq_no;
-	  } else {
-	    tcp.attempts++;
-	    tcp.send_time = IP_Manager::manager().milliseconds ();
+	    buffer_tcp->tcp_finalise ();
 	  }
+	}
+	if (buffer_tcp) { // respond to a new connection
+	  ++tcp.attempts;
 
 	  IP_Manager::manager().forward (buffer_tcp); // send it
 
-	  timer.start (IP_Manager::manager (), 500); // TODO: 500?
+	  timer.start (IP_Manager::manager (), 599); // TODO: 500?
 	  timeout_set (true);
 
 	  tcp_send_syn_ack (false);
@@ -399,8 +397,9 @@ bool IP_Connection::accept_tcp (IP_Buffer * buffer) {
 
 	/* This is a response to a SYN we sent.
 	 */
-	buffer_tcp->unref ();
-	IP_Manager::manager().add_to_spares (buffer_tcp);
+	if (!buffer_tcp->unref ()) {
+	  IP_Manager::manager().add_to_spares (buffer_tcp);
+	}
 	buffer_tcp = 0;
 
 	tcp.ack_no = buffer->tcp().seq_no ();
@@ -427,8 +426,9 @@ bool IP_Connection::accept_tcp (IP_Buffer * buffer) {
 
 	/* This is a response to a SYN-ACK we sent.
 	 */
-	buffer_tcp->unref ();
-	IP_Manager::manager().add_to_spares (buffer_tcp);
+	if (!buffer_tcp->unref ()) {
+	  IP_Manager::manager().add_to_spares (buffer_tcp);
+	}
 	buffer_tcp = 0;
 
 	timeout_set (false);

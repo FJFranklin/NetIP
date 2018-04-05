@@ -473,6 +473,9 @@ public:
   inline u8_t unref () {
     return --ref_count;
   }
+  inline bool retained () const {
+    return (ref_count > 0);
+  }
 
   Buffer (u8_t * byte_buffer, u16_t capacity, bool bFull = false) :
     buffer(byte_buffer),

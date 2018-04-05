@@ -127,6 +127,9 @@ bool IP_Manager::queue (IP_Buffer *& buffer) {
     IP_Buffer * pending = buffer;
     IP_Buffer * spare = get_from_spares ();
 
+    if (buffer == spare) {
+      DEBUG_PRINT ("$^$"); // help!
+    }
     if (spare) {
       buffer = spare;
       chain_buffers_pending.chain_push (pending, true /* FIFO */);

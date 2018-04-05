@@ -91,16 +91,21 @@ public:
    * adds a free buffer to the spares
    */
   inline void add_to_spares (IP_Buffer * buffer) {
-    // DEBUG_PRINT ("add_to_spares ()\n");
-    chain_buffers_spare.chain_prepend (buffer);
+    if (buffer) {
+      if (!buffer->retained ()) {
+	// fprintf (stderr, ">> %p\n", buffer);
+	chain_buffers_spare.chain_prepend (buffer);
+      }
+    }
   }
 
   /* 
    * gets a free buffer from the spares - if there are any
    */
   inline IP_Buffer * get_from_spares () {
-    // DEBUG_PRINT ("get_from_spares ()\n");
-    return chain_buffers_spare.chain_pop ();
+    IP_Buffer * B = chain_buffers_spare.chain_pop ();
+    // fprintf (stderr, "<< %p\n", B);
+    return B;
   }
 
   void ping (const IP_Address & address);

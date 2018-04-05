@@ -30,7 +30,7 @@
 #include <errno.h>
 #include <termios.h>
 
-IP_SerialChannel::IP_SerialChannel (const char * device_name) :
+IP_SerialChannel::IP_SerialChannel (const char * device_name, bool bFixBaud) :
   device_fd(-1)
 {
   device_fd = open (device_name, O_RDWR | O_NOCTTY | O_NONBLOCK /* O_NDELAY */);
@@ -38,22 +38,24 @@ IP_SerialChannel::IP_SerialChannel (const char * device_name) :
     fprintf (stderr, "Failed to open \"%s\" - exiting.\n", device_name);
     return;
   }
-#if 0
-  struct termios options;
 
-  tcgetattr (device_fd, &options);
+  if (bFixBaud) {
+    struct termios options;
 
-  options.c_cflag = CS8 | CLOCAL | CREAD;
-  options.c_iflag = IGNPAR;
-  options.c_oflag = 0;
-  options.c_lflag = 0;
+    tcgetattr (device_fd, &options);
 
-  cfsetispeed (&options, B115200);
-  cfsetospeed (&options, B115200);
+    options.c_cflag = CS8 | CLOCAL | CREAD;
+    options.c_iflag = IGNPAR;
+    options.c_oflag = 0;
+    options.c_lflag = 0;
 
-  tcflush (device_fd, TCIFLUSH);
-  tcsetattr (device_fd, TCSANOW, &options);
-#endif
+    cfsetispeed (&options, B115200);
+    cfsetospeed (&options, B115200);
+
+    tcflush (device_fd, TCIFLUSH);
+    tcsetattr (device_fd, TCSANOW, &options);
+  }
+
   u8_t byte;
 
   while (read (device_fd, &byte, 1) > 0) {
