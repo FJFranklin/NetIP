@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 
-class Uino : public IP_TimerClient, public IP_Connection::EventListener {
+class Uino : public IP_TimerClient, public IP_Connection::EventListener, public IP_Manager::Listener  {
   IP_Connection * udp;
   IP_Connection * tcp_server;
   IP_Connection * tcp_client;
@@ -37,6 +37,17 @@ public:
 
     pinMode (LED_BUILTIN, OUTPUT);
     digitalWrite (LED_BUILTIN, LOW);
+  }
+
+  virtual void debug_print (const char * message) {
+    if (bConnected_UDP) {
+      udp->request_to_send ();
+      dbg_str = message;
+    }
+  }
+
+  virtual void pong (const IP_Address & address, u32_t round_trip, u16_t seq_no) {
+    // ...
   }
 
   virtual void connection_has_opened (const IP_Connection & connection) {
@@ -115,16 +126,7 @@ public:
     }
     return true; // keep going
   }
-
-  void print (const char * str) {
-    if (str && bConnected_UDP) {
-      udp->request_to_send ();
-      dbg_str = str;
-    }
-  }
 };
-
-Uino * s_uino = 0;
 
 void setup () {
   Serial.begin (115200);
@@ -146,18 +148,15 @@ void setup () {
   IP.connection_add (&tcp_client);
 
   Uino uino(&udp, &tcp_server, &tcp_client);
-  s_uino = &uino;
 
   IP_Timer timer(&uino);  // set up a periodic callback
   timer.start (IP, 1000); // once a second
+
+  IP.set_event_listener (&uino);
 
   IP.run (); // runs forever
 }
 
 void loop() {
   // unreachable
-}
-
-void uino_print (const char * str) {
-  s_uino->print (str);
 }

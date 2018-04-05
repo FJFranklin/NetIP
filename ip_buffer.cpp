@@ -278,7 +278,7 @@ void IP_Buffer::icmp_finalise () {
   icmp().checksum() = check.checksum ();
 }
 
-void IP_Buffer::ping (const IP_Address & address) {
+void IP_Buffer::ping (const IP_Address & address, u16_t seq_no) {
   defaults (p_ICMP);
 
   ip().source() = IP_Manager::manager().host;
@@ -290,7 +290,7 @@ void IP_Buffer::ping (const IP_Address & address) {
   /* These next fields are fairly arbitrary.
    */
   icmp().id()      = 0x73;
-  icmp().seq_no()  = 0x37;
+  icmp().seq_no()  = seq_no;
   icmp().payload() = IP_Manager::manager().milliseconds ();
 
   icmp_finalise ();
@@ -303,6 +303,14 @@ void IP_Buffer::ping_to_pong () { // we do this in-place, i.e., convert in incom
   icmp().type() = ip().protocol_echo_reply ();
 
   icmp_finalise ();
+}
+
+void IP_Buffer::pong (u32_t & round_trip, u16_t & seq_no) const {
+  u32_t time = IP_Manager::manager().milliseconds ();
+
+  round_trip = time - icmp().payload ();
+
+  seq_no = icmp().seq_no ();
 }
 
 void IP_Buffer::print () const {

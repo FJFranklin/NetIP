@@ -33,12 +33,6 @@ typedef unsigned char  u8_t;
 typedef unsigned short u16_t;
 typedef unsigned long  u32_t;
 
-#if IP_DEBUG
-#define DEBUG_PRINT(x) fputs (x, stderr)
-#else
-#define DEBUG_PRINT(x) while (false)
-#endif
-
 extern void  ip_arch_usleep (u16_t us);
 extern u32_t ip_arch_millis ();
 

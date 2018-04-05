@@ -26,6 +26,12 @@
 
 #include "ip_config.hh"
 
+#if IP_DEBUG
+#define DEBUG_PRINT(x) IP_Manager::manager().debug_print (x)
+#else
+#define DEBUG_PRINT(x) while (false)
+#endif
+
 /* Header sizes
  */
 #define IP_Header_Length_IPv6 40

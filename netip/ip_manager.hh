@@ -31,8 +31,21 @@
 class IP_UDP_Connection;
 
 class IP_Manager : public IP_Clock, public IP_TimerClient {
+public:
+  class Listener {
+  public:
+    virtual void debug_print (const char * message) = 0;
+    virtual void pong (const IP_Address & address, u32_t round_trip, u16_t seq_no) = 0;
+
+    virtual ~Listener () {
+      // ...
+    }
+  };
+
 private:
   u8_t channel_register[127];
+
+  Listener * EL;
 
   IP_Buffer buffers[IP_Buffer_Extras];
 
@@ -45,6 +58,7 @@ private:
   IP_Timer timer;         // timer for broadcast ping
   u16_t    ping_interval; // how often to broadcast ping on local network
 
+  u16_t  ping_next; // counter for generating ping sequence numbers
   u16_t  last_port; // counter for generating free port numbers
 
   u8_t   ticker;    // internal cooperative management
@@ -60,6 +74,16 @@ public:
 
   ~IP_Manager () {
     // ...
+  }
+
+  inline void set_event_listener (Listener * listener) {
+    EL = listener;
+  }
+
+  inline void debug_print (const char * message) {
+    if (EL && message) {
+      EL->debug_print (message);
+    }
   }
 
   inline void connection_add (IP_Connection * connection) {
@@ -108,9 +132,13 @@ public:
     return B;
   }
 
-  void ping (const IP_Address & address);
+  void ping (const IP_Address & address, u16_t seq_no);
 
 private:
+  u16_t ping_seq_no () {
+    return ++ping_next;
+  }
+
   void connection_handover (IP_Buffer * buffer);
 
   enum RoutingInfo {

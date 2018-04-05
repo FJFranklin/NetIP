@@ -166,8 +166,9 @@ public:
 private:
   void icmp_finalise ();
 public:
-  void ping (const IP_Address & destination);
+  void ping (const IP_Address & destination, u16_t seq_no);
   void ping_to_pong ();
+  void pong (u32_t & round_trip, u16_t & seq_no) const;
 
   void print () const;
 };

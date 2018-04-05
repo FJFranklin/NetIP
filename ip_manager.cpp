@@ -33,8 +33,10 @@ IP_Manager & IP_Manager::manager () {
  * Use IP_Manager::manager() to get the global instance
  */
 IP_Manager::IP_Manager () :
+  EL(0),
   timer(this),
   ping_interval(1),
+  ping_next(0),
   last_port(0xC000),
   host(IP_Address_DefaultHost),
   gateway(IP_Address_DefaultGateway),
@@ -328,7 +330,14 @@ void IP_Manager::tick () {
 	  // pending->print ();
 	  register_source (pending->channel (), pending->ip().source ());
 
-	  if (pending->ip().destination () == host) { // it's for us - but we don't (yet) use it
+	  if (pending->ip().destination () == host) { // it's for us
+	    if (EL) {
+	      u32_t round_trip;
+	      u16_t seq_no;
+
+	      pending->pong (round_trip, seq_no);                     // get the values
+	      EL->pong (pending->ip().source (), round_trip, seq_no); // pass them on
+	    }
 	    add_to_spares (pending);
 	  } else { // forward it
 	    forward (pending);
@@ -395,12 +404,12 @@ bool IP_Manager::timeout () {
   } else {
     IP_Address B = host;
     B.set_local_network_id (255); // broadcast address for local network
-    ping (B);
+    ping (B, ping_seq_no ());
   }
   return true; // keep running
 }
 
-void IP_Manager::ping (const IP_Address & address) {
+void IP_Manager::ping (const IP_Address & address, u16_t seq_no) {
   DEBUG_PRINT ("IP_Manager::ping\n");
   IP_Buffer * spare = get_from_spares ();
 
@@ -410,7 +419,7 @@ void IP_Manager::ping (const IP_Address & address) {
   }
 
   spare->channel (0);
-  spare->ping (address);
+  spare->ping (address, seq_no);
   // spare->print ();
   forward (spare);
 }

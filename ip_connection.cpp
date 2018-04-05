@@ -30,6 +30,7 @@ void IP_Connection::reset (IP_Protocol p, u16_t port) {
   fifo_write.clear ();
 
   if (buffer_tcp) {
+    buffer_tcp->unref ();
     IP_Manager::manager().add_to_spares (buffer_tcp);
     buffer_tcp = 0;
   }
@@ -397,9 +398,8 @@ bool IP_Connection::accept_tcp (IP_Buffer * buffer) {
 
 	/* This is a response to a SYN we sent.
 	 */
-	if (!buffer_tcp->unref ()) {
-	  IP_Manager::manager().add_to_spares (buffer_tcp);
-	}
+	buffer_tcp->unref ();
+	IP_Manager::manager().add_to_spares (buffer_tcp);
 	buffer_tcp = 0;
 
 	tcp.ack_no = buffer->tcp().seq_no ();
@@ -426,9 +426,8 @@ bool IP_Connection::accept_tcp (IP_Buffer * buffer) {
 
 	/* This is a response to a SYN-ACK we sent.
 	 */
-	if (!buffer_tcp->unref ()) {
-	  IP_Manager::manager().add_to_spares (buffer_tcp);
-	}
+	buffer_tcp->unref ();
+	IP_Manager::manager().add_to_spares (buffer_tcp);
 	buffer_tcp = 0;
 
 	timeout_set (false);

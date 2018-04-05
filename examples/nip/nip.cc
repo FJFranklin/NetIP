@@ -30,15 +30,18 @@
 
 #include "tests.hh"
 
-class Uino : public IP_TimerClient, public IP_Connection::EventListener {
+class Uino : public IP_TimerClient, public IP_Connection::EventListener, public IP_Manager::Listener {
 private:
   u8_t buffer[32];
+
+  IP_Address device;
 
   IP_Connection * udp;
   IP_Connection * tcp_server;
   IP_Connection * tcp_client;
 
-  u8_t number;
+  u8_t  number;
+  u16_t pingno;
 
   bool bTesting;
   bool bOn;
@@ -53,6 +56,7 @@ public:
     tcp_server(server),
     tcp_client(client),
     number(0),
+    pingno(0),
     bTesting(bTest),
     bOn(false),
     bFirst(true),
@@ -60,6 +64,9 @@ public:
     bConnected_TCP_Server(false),
     bConnected_TCP_Client(false)
   {
+    device = IP_Manager::manager().host;
+    device.set_local_network_id (0x0a); // 0x77 for the UNO // TODO: make this a command-line option
+
     udp->set_event_listener (this);
     udp->open (); // just listen; don't connect
 
@@ -67,6 +74,14 @@ public:
     tcp_server->open (); // just listen; don't connect
 
     tcp_client->set_event_listener (this);
+  }
+
+  virtual void debug_print (const char * message) {
+    fputs (message, stderr);
+  }
+
+  virtual void pong (const IP_Address & address, u32_t round_trip, u16_t seq_no) {
+    fprintf (stderr, "ping (%02x) %lu ms [#%u]\n", (unsigned) address.local_network_id (), (unsigned long) round_trip, (unsigned) seq_no);
   }
 
   virtual void connection_has_opened (const IP_Connection & connection) {
@@ -196,12 +211,10 @@ public:
     if (bFirst) {
       bFirst = false;
 
-      IP_Address device;
-      device = IP_Manager::manager().host;
-      device.set_local_network_id (0x0a); // 0x77 for the UNO
-
       tcp_client->connect (device, 0xBCCB); // 48331 (in the range 48130-48555 currently unassigned by IANA)
     }
+
+    IP_Manager::manager().ping (device, pingno++);
 
     if (bOn) {
       bOn = false;
@@ -283,7 +296,9 @@ int main (int argc, char ** argv) {
   Uino uino(&udp, &tcp_server, &tcp_client, bTesting);
 
   IP_Timer timer(&uino); // set up a periodic callback
-  timer.start (IP, 10);  // once every 10 milliseconds
+  timer.start (IP, 100); // once every 100 milliseconds
+
+  IP.set_event_listener (&uino);
 
   IP.run (); // runs forever
 
