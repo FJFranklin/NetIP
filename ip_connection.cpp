@@ -44,6 +44,9 @@ void IP_Connection::reset (IP_Protocol p, u16_t port) {
 void IP_Connection::update () {
   if (is_open ()) {
 
+    if (EL && !fifo_read.is_empty ()) { // notify listener that data is waiting to be read
+      EL->connection_has_data (*this);
+    }
     if (buffer_in) {
       data_in_length -= buffer_in->push (fifo_read, data_in_offset);
 

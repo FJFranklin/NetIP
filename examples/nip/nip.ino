@@ -50,6 +50,18 @@ public:
     // ...
   }
 
+  virtual void connection_has_data (const IP_Connection & connection) {
+    if (connection.is_TCP ()) {
+      if (connection.tcp_server ()) {
+	// ...
+      } else {
+	// ...
+      }
+    } else {
+      // ...
+    }
+  }
+
   virtual void connection_has_opened (const IP_Connection & connection) {
     if (connection.is_TCP ()) {
       if (connection.tcp_server ()) {

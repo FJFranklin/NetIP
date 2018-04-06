@@ -50,6 +50,10 @@ public:
      */
     virtual bool buffer_to_send (const IP_Connection & connection, IP_Buffer & buffer) = 0;
 
+    /* notification that there is data waiting to be read
+     */
+    virtual void connection_has_data (const IP_Connection & connection) = 0;
+
     virtual void connection_has_opened (const IP_Connection & connection) = 0;
 
     virtual void connection_has_closed (const IP_Connection & connection) = 0;

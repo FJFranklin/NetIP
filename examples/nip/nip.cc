@@ -26,6 +26,7 @@
 #include <netip/ip_manager.hh>
 #include <netip/ip_serial.hh>
 
+#include <stdlib.h>
 #include <signal.h>
 
 #include "tests.hh"
@@ -40,6 +41,7 @@ private:
   IP_Connection * tcp_server;
   IP_Connection * tcp_client;
 
+  u8_t  remote;
   u8_t  number;
   u16_t pingno;
 
@@ -51,10 +53,11 @@ private:
   bool bConnected_TCP_Client;
 
 public:
-  Uino (IP_Connection * con, IP_Connection * server, IP_Connection * client, bool bTest) :
+  Uino (IP_Connection * con, IP_Connection * server, IP_Connection * client, u8_t remote_id, bool bTest) :
     udp(con),
     tcp_server(server),
     tcp_client(client),
+    remote(remote_id),
     number(0),
     pingno(0),
     bTesting(bTest),
@@ -65,7 +68,7 @@ public:
     bConnected_TCP_Client(false)
   {
     device = IP_Manager::manager().host;
-    device.set_local_network_id (0x0a); // 0x77 for the UNO // TODO: make this a command-line option
+    device.set_local_network_id (remote);
 
     udp->set_event_listener (this);
     udp->open (); // just listen; don't connect
@@ -82,6 +85,30 @@ public:
 
   virtual void pong (const IP_Address & address, u32_t round_trip, u16_t seq_no) {
     fprintf (stderr, "ping (%02x) %lu ms [#%u]\n", (unsigned) address.local_network_id (), (unsigned long) round_trip, (unsigned) seq_no);
+  }
+
+  virtual void connection_has_data (const IP_Connection & connection) {
+    if (connection.is_TCP ()) {
+      if (connection.tcp_server ()) {
+	// ...
+      } else {
+	// ...
+      }
+    } else {
+      u16_t count = udp->read (buffer, 32);
+
+      if (count) {
+	fprintf (stderr, "UDP-0xBCCB: \"");
+
+	while (count) {
+	  for (u16_t c = 0; c < count; c++) {
+	    fputc (buffer[c], stderr);
+	  }
+	  count = udp->read (buffer, 32);
+	}
+	fprintf (stderr, "\"\n");
+      }
+    }
   }
 
   virtual void connection_has_opened (const IP_Connection & connection) {
@@ -233,19 +260,6 @@ public:
       }
     }
 
-    u16_t count = udp->read (buffer, 32);
-
-    if (count) {
-      fprintf (stderr, "UDP-0xBCCB: \"");
-
-      while (count) {
-	for (u16_t c = 0; c < count; c++) {
-	  fputc (buffer[c], stderr);
-	}
-	count = udp->read (buffer, 32);
-      }
-      fprintf (stderr, "\"\n");
-    }
     return true; // keep going
   }
 };
@@ -259,20 +273,31 @@ int main (int argc, char ** argv) {
 
   const char * device = "/dev/ttyACM0";
 
+  u8_t id = 0x0a; // 0x77 for the UNO
+
   for (int arg = 1; arg < argc; arg++) {
     if (strcmp (argv[arg], "--help") == 0) {
       fprintf (stderr, "\nnip [--help] [--test] [/dev/<ID>]\n\n");
-      fprintf (stderr, "  --help     Display this help.\n");
-      fprintf (stderr, "  --test     Sample IP packet testing.\n");
-      fprintf (stderr, "  /dev/<ID>  Connect to /dev/<ID> instead of default [/dev/ttyACM0].\n\n");
+      fprintf (stderr, "  --help         Display this help.\n");
+      fprintf (stderr, "  --test         Sample IP packet testing.\n");
+      fprintf (stderr, "  --remote=<id>  Specify local network id [1-254] of the remote device.\n");
+      fprintf (stderr, "  /dev/<ID>      Connect to /dev/<ID> instead of default [/dev/ttyACM0].\n\n");
       return 0;
     }
     if (strncmp (argv[arg], "/dev/", 5) == 0) {
       device = argv[arg];
     } else if (strcmp (argv[arg], "--test") == 0) {
       bTesting = true;
+    } else if (strncmp (argv[arg], "--remote=", 9) == 0) {
+      int rid = atoi (argv[arg] + 9);
+      if ((rid > 0) && (rid < 255)) {
+	id = rid;
+      } else {
+	fprintf (stderr, "local network id for remote device must be in the range 1-254\n");
+	return -1;
+      }
     } else {
-      fprintf (stderr, "nip [--help] [--test] [/dev/<ID>]\n");
+      fprintf (stderr, "nip [--help] [--test] [--remote=<id>] [/dev/<ID>]\n");
       return -1;
     }
   }
@@ -293,10 +318,10 @@ int main (int argc, char ** argv) {
   IP_Connection tcp_client(p_TCP, IP.available_port ());
   IP.connection_add (&tcp_client);
 
-  Uino uino(&udp, &tcp_server, &tcp_client, bTesting);
+  Uino uino(&udp, &tcp_server, &tcp_client, id, bTesting);
 
-  IP_Timer timer(&uino); // set up a periodic callback
-  timer.start (IP, 100); // once every 100 milliseconds
+  IP_Timer timer(&uino);  // set up a periodic callback
+  timer.start (IP, 1000); // once every second
 
   IP.set_event_listener (&uino);
 
