@@ -28,10 +28,23 @@
 
 class IP_SerialChannel : public IP_Channel {
 private:
+
+#ifdef ARDUINO_SAM_DUE // "Due"
+  /* For some reason, availableForWrite() is not defined in the base Stream class.
+   */
+  UARTClass & device_serial;
+#else
   Stream & device_serial;
+#endif
 
 public:
-  IP_SerialChannel (Stream & serial) :
+  IP_SerialChannel (
+#ifdef ARDUINO_SAM_DUE // "Due"
+		    UARTClass & serial
+#else
+		    Stream & serial
+#endif
+		    ) :
     device_serial(serial)
   {
     // ...

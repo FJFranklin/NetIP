@@ -270,6 +270,7 @@ void interrupt (int /* dummy */) {
 
 int main (int argc, char ** argv) {
   bool bTesting = false;
+  bool bSetBaud = false;
 
   const char * device = "/dev/ttyACM0";
 
@@ -280,6 +281,7 @@ int main (int argc, char ** argv) {
       fprintf (stderr, "\nnip [--help] [--test] [/dev/<ID>]\n\n");
       fprintf (stderr, "  --help         Display this help.\n");
       fprintf (stderr, "  --test         Sample IP packet testing.\n");
+      fprintf (stderr, "  --set-baud     Explicit set BAUD 115200.\n");
       fprintf (stderr, "  --remote=<id>  Specify local network id [1-254] of the remote device.\n");
       fprintf (stderr, "  /dev/<ID>      Connect to /dev/<ID> instead of default [/dev/ttyACM0].\n\n");
       return 0;
@@ -288,6 +290,8 @@ int main (int argc, char ** argv) {
       device = argv[arg];
     } else if (strcmp (argv[arg], "--test") == 0) {
       bTesting = true;
+    } else if (strcmp (argv[arg], "--set-baud") == 0) {
+      bSetBaud = true;
     } else if (strncmp (argv[arg], "--remote=", 9) == 0) {
       int rid = atoi (argv[arg] + 9);
       if ((rid > 0) && (rid < 255)) {
@@ -306,7 +310,7 @@ int main (int argc, char ** argv) {
 
   IP_Manager & IP = IP_Manager::manager ();
   
-  IP_SerialChannel ser0(device);
+  IP_SerialChannel ser0(device, bSetBaud);
   IP.channel_add (&ser0);
 
   IP_Connection udp(p_UDP, 0xBCCB);

@@ -1,6 +1,9 @@
 #include <NetIP.hh>
 #include <Arduino.h>
+
+#ifndef ARDUINO_SAM_DUE // Arduino Due doesn't support EEPROM
 #include <EEPROM.h>
+#endif
 
 class Uino : public IP_TimerClient, public IP_Connection::EventListener, public IP_Manager::Listener  {
   IP_Connection * udp;
@@ -145,7 +148,11 @@ void setup () {
 
   IP_Manager & IP = IP_Manager::manager ();
 
+#ifndef ARDUINO_SAM_DUE // Arduino Due doesn't support EEPROM
   IP.host.set_local_network_id (EEPROM.read (0));
+#else
+  IP.host.set_local_network_id (2); // clumsy workaround
+#endif
 
   IP_SerialChannel ser0(Serial);
   IP.channel_add (&ser0);
