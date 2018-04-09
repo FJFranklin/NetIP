@@ -44,7 +44,7 @@ void IP_Timer::start (IP_Clock & clock, u32_t interval) {
 
 /** Check the registered timers and call callback if appropriate.
  * \param current_time The current clock time (in milliseconds).
- * \return True if a timer's callback was called; if so, timer_checks() should be called again.
+ * \return False if a timer's callback was called; if so, timer_checks() should be called again.
  */
 bool IP_Clock::timer_checks (u32_t current_time) {
   Chain<IP_Timer>::iterator I = chain_timers.begin ();
