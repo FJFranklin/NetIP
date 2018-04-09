@@ -21,8 +21,20 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*! \file ip_timer.cpp
+    \brief Implementation of IP_Timer and IP_Clock classes.
+    
+    Clock and timer-related class implementations. IP_Timer is used for one-off or periodic callbacks with
+    roughly millisecond precision. IP_Clock cycles indefinitely, checking the time and calling IP_Timer
+    callbacks as and when required; there should only be one IP_Clock instance running per application.
+*/
+
 #include "netip/ip_timer.hh"
 
+/** Register a timer with a clock and specify the callback interval.
+ * \param clock    The application's clock; callbacks only work if the clock is running.
+ * \param interval Interval (in milliseconds) until the callback should be called.
+ */
 void IP_Timer::start (IP_Clock & clock, u32_t interval) {
   timer_target   = interval + clock.milliseconds ();
   timer_interval = interval;
@@ -30,6 +42,10 @@ void IP_Timer::start (IP_Clock & clock, u32_t interval) {
   clock.timer_add (this);
 }
 
+/** Check the registered timers and call callback if appropriate.
+ * \param current_time The current clock time (in milliseconds).
+ * \return True if a timer's callback was called; if so, timer_checks() should be called again.
+ */
 bool IP_Clock::timer_checks (u32_t current_time) {
   Chain<IP_Timer>::iterator I = chain_timers.begin ();
 
@@ -43,6 +59,11 @@ bool IP_Clock::timer_checks (u32_t current_time) {
   return !*I;
 }
 
+/** Run the clock. This continues indefinitely, but can be stopped by calling stop().
+ * With each cycle of the infinite loop, tick() is called. Each millisecond, the timers are checked
+ * using timer_checks(), and every_millisecond() is called. Once a second, every_second() is called.
+ * Subclasses can override tick(), every_millisecond() and every_second().
+ */
 void IP_Clock::run () {
   while (!bStop) {
     u32_t time = milliseconds ();  // just call this the once

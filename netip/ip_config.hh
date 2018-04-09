@@ -21,49 +21,58 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*! \file ip_config.hh
+    \brief Defaults and settings that affect NetIP.
+    
+    Some settings affect network communication and should be kept constant for all devices on the network,
+    in particular IP_USE_IPv6 and IP_Buffer_WordCount, but the rest could be (and arguably *should* be)
+    moved to device-specific application source folders / sketches.
+*/
+
 #ifndef __ip_config_hh__
 #define __ip_config_hh__
 
 /* Protocol options
  */
-#define IP_USE_IPv6 0
+#define IP_USE_IPv6          0 ///< Use IPv6 protocol headers; default is IPv4.
 
 /* Architecture build options
  */
 #ifndef IP_ARCH_UNIX
-#define IP_ARCH_ARDUINO      1
-#define IP_ARCH_UNIX         0
+#define IP_ARCH_ARDUINO      1 ///< Build for Arduino-type device (this is the default behaviour).
+#define IP_ARCH_UNIX         0 ///< Build for Unix-type device; should be defined on the compile line.
 #endif
 
 #if IP_ARCH_UNIX
-#define IP_DEBUG    1
+#define IP_DEBUG             1
 #include "unix/ip_arch.hh"
 #endif
 #if IP_ARCH_ARDUINO
-#define IP_DEBUG    0
+#define IP_DEBUG             0 ///< Enable debug feedback - potentially very noisy.
 #include "arduino/ip_arch.hh"
 #endif
 
-/* (comma-separated) default host & gateway (default router) addresses and netmask
+/* (Comma-separated) Default host & gateway (default router) addresses and netmask, for IPv4 and IPv6.
+ * .255 should be broadcast; .0 reserved as a network identifier.
  */
 #if IP_USE_IPv6
 #define IP_Address_DefaultHost    0xfd00,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0501
 #define IP_Address_DefaultGateway 0xfd00,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x05fe
 #define IP_Address_DefaultNetmask 0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xff00
 #else
-#define IP_Address_DefaultHost    192,168,  5,  1
-#define IP_Address_DefaultGateway 192,168,  5,  1 // .255 should be broadcast; .0 reserved as a network identifier;
-#define IP_Address_DefaultNetmask 255,255,255,  0
+#define IP_Address_DefaultHost    192,168,  5,  1 ///< Default host address; for both IPv4 and IPv6, the last byte (1-254) identifies the device on NetIP's local network.
+#define IP_Address_DefaultGateway 192,168,  5,  1 ///< Default gateway address; attempts to connect to external addresses will route to the gateway device.
+#define IP_Address_DefaultNetmask 255,255,255,  0 ///< Network mask.
 #endif
 
-/* parameters affecting memory use
+/* Parameters affecting memory use. A high IP_Buffer_Extras increases performance but significantly impacts memory use.
  */
-#define IP_Buffer_WordCount  64   // buffer size in (2-byte) words; one included per channel - affects TCP/IP data size
-#define IP_Buffer_Extras      4   // how many extra buffers (1 minimum) to use to increase flexibility and responsiveness
-#define IP_Connection_FIFO   32   // size of FIFO in bytes per connection
+#define IP_Buffer_WordCount  64   ///< Buffer size in (2-byte) words; one included per channel - affects TCP/IP data size.
+#define IP_Buffer_Extras      4   ///< The number of extra buffers (1 minimum) to include to increase flexibility and responsiveness.
+#define IP_Connection_FIFO   32   ///< Size of FIFO in bytes; there are two FIFO per connection.
 
-/* networking parameters
+/* Other network parameters.
  */
-#define IP_TimeToLive        64   // the hop count / time to live of IP packets.
+#define IP_TimeToLive        64   ///< the hop count / time to live of IP packets; not actually relevant to NetIP's local network.
 
 #endif /* ! __ip_config_hh__ */
