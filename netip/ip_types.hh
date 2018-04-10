@@ -183,7 +183,7 @@ public:
     return *((ns16_t *) (byte + 2));
   }
 
-  /** Assignment of a u32_t (unsigned integer) to an ns16_t object.
+  /** Assignment of a u32_t (unsigned integer) to an ns32_t object.
    */
   inline ns32_t & operator= (u32_t i) {
     byte[3] = i & 0xFF;
@@ -242,10 +242,16 @@ public:
   }
 };
 
+/** NetIP uses a number of linked lists, partly to avoid dynamic memory allocation but
+ *  also for queuing buffers and managing tasks. Link is a generic object that must be
+ *  subclassed to be added to Chain objects.
+ */
 class Link {
 public:
-  Link * link_next;
+  Link * link_next; ///< Pointer to next link in chain, or 0 if none.
 
+  /** Default constructor.
+   */
   Link () :
     link_next(0)
   {
@@ -256,19 +262,30 @@ public:
     // ...
   }
 
+  /** Returns true if this link is in the specified chain of links.
+   */
   bool in_chain (const Link * link_first) const;
 
+  /** Remove a link from a specified chain of links.
+   */
   static void remove_from_chain (Link *& link_first, Link *& link_last, Link * link);
 };
 
+/** The Chain object is used to manage chains of various types of links, which must be
+ *  subclasses of Link. The subclass is specified in the template definition.
+ */
 template<class T>
 class Chain {
 public:
+  /** An iterator to work with the Chain object.
+   */
   class iterator {
   private:
-    Link * link;
+    Link * link; ///< The Link object currently referenced by the iterator.
 
   public:
+    /** The iterator must be instantiated with a link in the chain.
+     */
     iterator (Link * start) :
       link(start)
     {
@@ -279,6 +296,8 @@ public:
       // ...
     }
 
+    /** Advance the iterator to the next link in the chain (if there is one).
+     */
     inline iterator & operator++ () {
       if (link) {
 	link = link->link_next;
@@ -286,20 +305,26 @@ public:
       return *this;
     }
 
+    /** Get the link currently referenced by the iterator - or 0 if at the end of the chain.
+     */
     inline T * operator* () {
       return static_cast<T *>(link);
     }
   };
 
 private:
-  Link * link_first;
-  Link * link_last;
+  Link * link_first; ///< The first link in the chain.
+  Link * link_last;  ///< The last link in the chain.
 
 public:
+  /** Get an iterator for the start of the chain.
+   */
   inline iterator begin () {
     return iterator(link_first);
   }
 
+  /** Add a link at the beginning of the chain.
+   */
   inline void chain_prepend (T * link) {
     if (!link->in_chain (link_first)) {
       link->link_next = link_first;
@@ -311,6 +336,8 @@ public:
     }
   }
 
+  /** Add a link at the end of the chain.
+   */
   inline void chain_append (T * link) {
     if (!link->in_chain (link_first)) {
       if (!link_last) {
@@ -323,10 +350,16 @@ public:
     }
   }
 
+  /** Remove a link from the chain.
+   */
   inline void chain_remove (Link * link) {
     Link::remove_from_chain (link_first, link_last, link);
   }
 
+  /** Get the first link in the chain.
+   * \param bRemove If true, then remove the link from the chain.
+   * \return The first link in the chain, or 0 if none.
+   */
   inline T * chain_first (bool bRemove = false) {
     Link * first = link_first;
 
@@ -336,6 +369,10 @@ public:
     return static_cast<T *>(first);
   }
 
+  /** Add a link to a chain.
+   * \param link  The new link to add.
+   * \param bFIFO If true, add to the end of the chain to create a FIFO queue.
+   */
   inline void chain_push (T * link, bool bFIFO = false) {
     if (bFIFO) {
       chain_append (link); // first in, first out
@@ -344,10 +381,14 @@ public:
     }
   }
 
+  /** Remove and return the link at the beginning of the chain, returning 0 if none.
+   */
   inline T * chain_pop () {
     return chain_first (true);
   }
 
+  /** Default constructor creates an empty chain.
+   */
   Chain () :
     link_first(0),
     link_last(0)
@@ -360,10 +401,16 @@ public:
   }
 };
 
+/** 16-bit checksums are used frequently by internet protocols. The Check16 object
+ *  is a simple implementation without any hardware optimisation.
+ */
 class Check16 {
 private:
-  u32_t sum;
+  u32_t sum; ///< The running total.
+
 public:
+  /** Default constructor, setting the sum to zero.
+   */
   Check16 () :
     sum(0)
   {
@@ -374,15 +421,21 @@ public:
     // ...
   }
 
+  /** Reset the sum to zero before starting a new checksum calculation.
+   */
   inline void clear () {
     sum = 0;
   }
 
+  /** Add a 16-bit unsigned integer value (in host byte order) to the running total.
+   */
   inline Check16 & operator+= (u16_t rhs) {
     sum += rhs;
     return *this;
   }
 
+  /** Calculate the checksum and return as a 16-bit unsigned integer value (in host byte order).
+   */
   inline u16_t checksum () {
     /* Fold to get the ones-complement result */
     while (sum >> 16) {
@@ -393,23 +446,31 @@ public:
   }
 };
 
+/** FIFO is a byte buffer where bytes are added and removed in first-in first-out order.
+ */
 class FIFO {
 private:
-  u8_t * buffer_start;
-  u8_t * buffer_end;
-  u8_t * data_start; // if start == end, then no data
-  u8_t * data_end;   // must point to a writable byte
+  u8_t * buffer_start; ///< Pointer to the start of the buffer.
+  u8_t * buffer_end;   ///< Pointer to the end of the buffer.
+  u8_t * data_start;   ///< Pointer to the start of the data; if start == end, then no data.
+  u8_t * data_end;     ///< Pointer to the end of the data; must point to a writable byte.
 
 public:
+  /** Empty the buffer for a fresh start.
+   */
   inline void clear () {
     data_start = buffer_start;
     data_end   = buffer_start;
   }
 
+  /** Returns true of the buffer is empty.
+   */
   inline bool is_empty () {
     return (data_start == data_end);
   }
 
+  /** Add a byte to the buffer; returns true if there was space.
+   */
   inline bool push (u8_t byte) {
     bool bCanPush = true;
 
@@ -433,6 +494,8 @@ public:
     return bCanPush;
   }
 
+  /** Remove a byte from the buffer; returns true if the buffer wasn't empty.
+   */
   inline bool pop (u8_t & byte) {
     if (data_start == data_end) { // buffer must be empty
       return false;
@@ -445,6 +508,10 @@ public:
     return true;
   }
 
+  /** The actual buffer exists elsewhere; FIFO merely manages it.
+   * \param byte_buffer Pointer to the external buffer.
+   * \param capacity    The size (number of bytes) of the external buffer.
+   */
   FIFO (u8_t * byte_buffer, u16_t capacity) :
     buffer_start(byte_buffer),
     buffer_end(byte_buffer+capacity),
@@ -458,34 +525,57 @@ public:
     // ...
   }
 
+  /** Read (and remove) multiple bytes from the buffer.
+   * \param ptr    Pointer to an external byte array where the data should be written.
+   * \param length Number of bytes to read from the buffer, if possible.
+   * \return The number of bytes actually read from the buffer.
+   */
   u16_t read (u8_t * ptr, u16_t length);
 
+  /** Write multiple bytes to the buffer.
+   * \param ptr    Pointer to an external byte array where the data should be read from.
+   * \param length Number of bytes to write to the buffer, if possible.
+   * \return The number of bytes actually written to the buffer.
+   */
   u16_t write (const u8_t * ptr, u16_t length);
 };
 
+/** A basic byte buffer class with a simple reference counter, various indexing methods
+ *  and read/write methods, and support for checksums.
+ */
 class Buffer {
 private:
-  static ns32_t fake_word;
+  static ns32_t fake_word; ///< An ideally unnecessary mechanism for safe indexing; fake_word is returned if index out-of-range.
 
-  u8_t * buffer;
+  u8_t * buffer;           ///< Pointer to the byte buffer.
 
-  u16_t  buffer_max; // maximum length
+  u16_t  buffer_max;       ///< Specified length (capacity) of the byte buffer.
 protected:
-  u16_t  buffer_used;
+  u16_t  buffer_used;      ///< Number of bytes used in the buffer so far.
 private:
-  u8_t   ref_count;
+  u8_t   ref_count;        ///< A reference counter.
 
 public:
+  /** Returns a constant pointer to the byte buffer.
+   */
   inline const u8_t * bytes () const {
     return buffer;
   }
+
+  /** Returns the current number of bytes in the buffer.
+   */
   inline u16_t length () const {
     return buffer_used;
   }
+
+  /** Returns the number of bytes that can be added to the buffer.
+   */
   inline u16_t available () const {
     return buffer_max - buffer_used;
   }
 
+  /** Reference to the byte at the specified index.
+   */
   inline u8_t & operator[] (u16_t index) {
     if (index < buffer_max) {
       if (buffer_used < (index + 1)) {
@@ -497,6 +587,9 @@ public:
     // bad indexing!
     return fake_word[0];
   }
+
+  /** Constant reference to the byte at the specified index.
+   */
   inline const u8_t & operator[] (u16_t index) const {
     if (index < buffer_max) {
       return buffer[index];
@@ -506,6 +599,8 @@ public:
     return fake_word[0];
   }
 
+  /** Reference to the two-byte word at the specified index (byte-offset).
+   */
   inline ns16_t & ns16 (u16_t index) {
     if ((index + 1) < buffer_max) {
       if (buffer_used < (index + 2)) {
@@ -518,6 +613,8 @@ public:
     return fake_word.hi ();
   }
 
+  /** Reference to the four-byte word at the specified index (byte-offset).
+   */
   inline ns32_t & ns32 (u16_t index) {
     if ((index + 3) < buffer_max) {
       if (buffer_used < (index + 4)) {
@@ -530,20 +627,35 @@ public:
     return fake_word;
   }
 
+  /** Empty the buffer.
+   */
   inline void clear () {
     buffer_used = 0;
   }
 
+  /** Increment the reference counter.
+   */
   inline void ref () {
     ++ref_count;
   }
+
+  /** Decrement the reference counter.
+   */
   inline u8_t unref () {
     return --ref_count;
   }
+
+  /** Returns true if the reference counter is non-zero.
+   */
   inline bool retained () const {
     return (ref_count > 0);
   }
 
+  /** The actual buffer exists elsewhere; Buffer merely manages it. The initial reference count is zero.
+   * \param byte_buffer Pointer to the external buffer.
+   * \param capacity    The size (number of bytes) of the external buffer.
+   * \param bFull       If true, the buffer is initialised as fully used; otherwise the buffer is set as empty.
+   */
   Buffer (u8_t * byte_buffer, u16_t capacity, bool bFull = false) :
     buffer(byte_buffer),
     buffer_max(capacity),
@@ -557,24 +669,12 @@ public:
     // ...
   }
 
-  inline u16_t append (const u8_t * ptr, u16_t length) {
-    u16_t count = 0;
-
-    if (ptr && length) {
-      count = (buffer_used + length <= buffer_max) ? length : (buffer_max - buffer_used);
-      memcpy (buffer + buffer_used, ptr, count);
-
-      if (buffer_used + count <= buffer_max) {
-	buffer_used += count;
-      }     
-    }
-    return count;
-  }
-
-  inline u16_t append (const char * str) {
-    return append ((const u8_t *) str, strlen (str));
-  }
-
+  /** Write multiple bytes to the buffer at a specified offset.
+   * \param offset Byte offset within buffer at which to write the bytes.
+   * \param ptr    Pointer to a byte array where the bytes should be read from.
+   * \param length The number of bytes to read and write, if there is sufficient space.
+   * \return The number of bytes actually read and written.
+   */
   inline u16_t write (u16_t offset, const u8_t * ptr, u16_t length) {
     u16_t count = 0;
 
@@ -589,6 +689,29 @@ public:
     return count;
   }
 
+  /** Append multiple bytes to the buffer.
+   * \param ptr    Pointer to a byte array where the bytes should be read from.
+   * \param length The number of bytes to read and append, if there is sufficient space.
+   * \return The number of bytes actually read and appended.
+   */
+  inline u16_t append (const u8_t * ptr, u16_t length) {
+    return write (buffer_used, ptr, length);
+  }
+
+  /** Append a string to the buffer.
+   * \param str The string to append.
+   * \return The number of bytes actually appended.
+   */
+  inline u16_t append (const char * str) {
+    return write (buffer_used, (const u8_t *) str, strlen (str));
+  }
+
+  /** Read multiple bytes from the buffer at a specified offset.
+   * \param offset Byte offset within buffer at which to read the bytes.
+   * \param ptr    Pointer to a byte array where the bytes should be written to.
+   * \param length The number of bytes to read and write, if possible.
+   * \return The number of bytes actually read and written.
+   */
   inline u16_t read (u16_t offset, u8_t * ptr, u16_t length) const {
     u16_t count = 0;
 
@@ -599,12 +722,21 @@ public:
     return count;
   }
 
+  /** Read bytes from a FIFO object and append to the buffer.
+   * \param fifo The FIFO object to read from.
+   * \return The number of bytes actually appended to the buffer from the FIFO object.
+   */
   inline u16_t pull (FIFO & fifo) { // append to buffer from FIFO
     u16_t count = fifo.read (buffer + buffer_used, buffer_max - buffer_used);
     buffer_used += count;
     return count;
   }
 
+  /** Write bytes to a FIFO object from the buffer at a specified offset.
+   * \param fifo          The FIFO object to write to.
+   * \param buffer_offset The byte offset within the buffer where the bytes should be read at.
+   * \return The number of bytes actually written to the FIFO object.
+   */
   inline u16_t push (FIFO & fifo, u16_t & buffer_offset) const { // write buffer to FIFO
     u16_t count = 0;
 
@@ -615,6 +747,12 @@ public:
     return count;
   }
 
+  /** Add a section of a buffer to a checksum sequence. (This doesn't clear the Check16 object
+   *  or calculate the checksum.)
+   * \param check  The Check16 object being used to calculate the checksum.
+   * \param offset The byte offset at which to start processing.
+   * \param length The number of bytes to process; or, if zero, continue to the end of the buffer.
+   */
   inline void check_16 (Check16 & check, u16_t offset, u16_t length = 0) const { // where 0 = 'to the end'
     if (offset < buffer_used) {
       if ((!length) || (length > buffer_used - offset)) {

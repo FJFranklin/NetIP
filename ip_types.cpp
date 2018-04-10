@@ -21,10 +21,21 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*! \file ip_types.cpp
+    \brief The more fundamental classes used within NetIP
+    
+    Although types are mostly defined as inline, the more complex and loopy bits are defined
+    here instead.
+*/
+
 #include "netip/ip_types.hh"
 
 ns32_t Buffer::fake_word; // static member variable
 
+/** Returns true if this link is in the specified chain of links.
+ * \param link The first link in the chain to search through.
+ * \return True if found.
+ */
 bool Link::in_chain (const Link * link) const {
   bool bMatched = false;
 
@@ -38,6 +49,11 @@ bool Link::in_chain (const Link * link) const {
   return bMatched;
 }
 
+/** Remove a link from a specified chain of links, updating the first and last links if necessary.
+ * \param link_first The first link in the chain to search through.
+ * \param link_last  The last link in the chain to search through.
+ * \param link The link to be removed.
+ */
 void Link::remove_from_chain (Link *& link_first, Link *& link_last, Link * link) {
   if (link && link_first) {
     if (link_first == link) {
@@ -71,6 +87,11 @@ void Link::remove_from_chain (Link *& link_first, Link *& link_last, Link * link
   }
 }
 
+/** Read (and remove) multiple bytes from the buffer.
+ * \param ptr    Pointer to an external byte array where the data should be written.
+ * \param length Number of bytes to read from the buffer, if possible.
+ * \return The number of bytes actually read from the buffer.
+ */
 u16_t FIFO::read (u8_t * ptr, u16_t length) {
   u16_t count = 0;
 
@@ -113,6 +134,11 @@ u16_t FIFO::read (u8_t * ptr, u16_t length) {
   return count;
 }
 
+/** Write multiple bytes to the buffer.
+ * \param ptr    Pointer to an external byte array where the data should be read from.
+ * \param length Number of bytes to write to the buffer, if possible.
+ * \return The number of bytes actually written to the buffer.
+ */
 u16_t FIFO::write (const u8_t * ptr, u16_t length) {
   u16_t count = 0;
 
