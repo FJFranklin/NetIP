@@ -115,7 +115,7 @@ struct IP_Header_IPv4 {
     return ((buffer[6] & 0x1F) << 8) | buffer[7];
   }
   inline void set_fragment_offset (u16_t offset) {
-    ns16_t o = ns16_t::convert (offset);
+    ns16_t o = offset;
     buffer[6] = (buffer[6] & 0xE0) | (o[0] & 0x1F);
     buffer[7] = o[1];
   }

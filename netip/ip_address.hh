@@ -82,10 +82,10 @@ public:
     return bMatch;
   }
   inline bool is_zeros () const {
-    return compare_all (ns16_t::convert (0x0000));
+    return compare_all (0x0000);
   }
   inline bool is_ones () const {
-    return compare_all (ns16_t::convert (0xFFFF));
+    return compare_all (0xFFFF);
   }
 
   inline void check (Check16 & C) const {

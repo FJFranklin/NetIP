@@ -21,157 +21,224 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*! \file ip_types.hh
+    \brief The more fundamental classes used within NetIP
+    
+    "Type punning" is used a lot in NetIP, which can result in a lot of compiler warnings. The more
+    fundamental types, u8_t (one byte), u16_t (two bytes) and u32_t (four bytes) are defined in
+    ip_defines.hh and are assumed to pack into memory without gaps. In ip_types.hh, the ns16_t and ns32_t
+    classes are workarounds for network byte order vs host device byte order.
+*/
+
 #ifndef __ip_types_hh__
 #define __ip_types_hh__
 
 #include "ip_config.hh"
 
+/** A two-byte type in which the two bytes are stored in network byte order.
+ */
 class ns16_t {
 private:
   u8_t byte[2];
 
 public:
+  /** Default constructor, setting initial value to zero.
+   */
+  ns16_t () {
+    memset (byte, 0, 2);
+  }
+
+  /** Constructor for an ns16_t object accepting an initial u16_t (unsigned short integer) value.
+   */
+  ns16_t (u16_t i) {
+    byte[0] = 0xFF & (i >> 8);
+    byte[1] = 0xFF & i;
+  }
+
+  ~ns16_t () {
+    // ...
+  }
+
+  /** Reference to the byte within the ns16_t object; 0 for the byte sent/received first, 1 for the byte sent/received second.
+   */
   inline u8_t & operator[] (int i) {
     return byte[0x01 & (u8_t) i];
   }
+
+  /** Constant reference to the byte within the ns16_t object; 0 for the byte sent/received first, 1 for the byte sent/received second.
+   */
   inline const u8_t & operator[] (int i) const {
     return byte[0x01 & (u8_t) i];
   }
 
+  /** Assignment of a u16_t (unsigned short integer) to an ns16_t object.
+   */
   inline ns16_t & operator= (u16_t i) {
     byte[0] = 0xFF & (i >> 8);
     byte[1] = 0xFF & i;
     return *this;
   }
 
+  /** Implicit cast of an ns16_t object to a u16_t (unsigned short integer).
+   */
   inline operator u16_t () const {
     return (((u16_t) byte[0]) << 8) | ((u16_t) byte[1]);
   }
 
+  /** Implicit cast of an ns16_t object to a bool (true if either byte is non-zero).
+   */
   inline operator bool () const {
     return (byte[0] || byte[1]);
   }
 
-  inline bool compare (ns16_t i) const {
-    return *((u16_t *) byte) == *((u16_t *) i.byte);
-  }
-  inline bool compare (u16_t i) const {
-    return (byte[0] == (u8_t) ((i >> 8) & 0xFF)) && (byte[1] == (u8_t) (i & 0xFF));
+  /** Equality comparison of two ns16_t objects.
+   */
+  inline bool operator== (const ns16_t & rhs) const {
+    return memcmp (byte, rhs.byte, 2);
   }
 
-  static inline ns16_t convert (u16_t i) {
-    ns16_t c;
-    c = i;
-    return c;
+  /** Equality comparison of an ns16_t object with a u16_t (unsigned short integer).
+   */
+  inline bool operator== (const u16_t & rhs) const {
+    u16_t lhs = *this;
+    return (lhs == rhs);
+  }
+
+  /** Inequality comparison of two ns16_t objects.
+   */
+  inline bool operator!= (const ns16_t & rhs) const {
+    return !memcmp (byte, rhs.byte, 2);
+  }
+
+  /** Inequality comparison of an ns16_t object with a u16_t (unsigned short integer).
+   */
+  inline bool operator!= (const u16_t & rhs) const {
+    u16_t lhs = *this;
+    return (lhs != rhs);
   }
 };
 
-inline bool operator== (const ns16_t & lhs, const ns16_t & rhs) {
-  return lhs.compare (rhs);
-}
-
-inline bool operator== (const ns16_t & lhs, const u16_t & rhs) {
-  return lhs.compare (rhs);
-}
-
-inline bool operator== (const u16_t & lhs, const ns16_t & rhs) {
-  return rhs.compare (lhs);
-}
-
-inline bool operator!= (const ns16_t & lhs, const ns16_t & rhs) {
-  return !lhs.compare (rhs);
-}
-
-inline bool operator!= (const ns16_t & lhs, const u16_t & rhs) {
-  return !lhs.compare (rhs);
-}
-
-inline bool operator!= (const u16_t & lhs, const ns16_t & rhs) {
-  return !rhs.compare (lhs);
-}
-
+/** A four-byte type in which the four bytes are stored in network byte order.
+ */
 class ns32_t {
 private:
-  union {
-    u8_t   byte[4];
-    ns16_t sword[2];
-    u32_t  lword;
-  } u;
+    u8_t byte[4];
 
 public:
+  /** Default constructor, setting initial value to zero.
+   */
+  ns32_t () {
+    memset (byte, 0, 4);
+  }
+
+  /** Constructor for an ns32_t object accepting an initial u32_t (unsigned integer) value.
+   */
+  ns32_t (u32_t i) {
+    byte[3] = i & 0xFF;
+    i >>= 8;
+    byte[2] = i & 0xFF;
+    i >>= 8;
+    byte[1] = i & 0xFF;
+    i >>= 8;
+    byte[0] = i;
+  }
+
+  ~ns32_t () {
+    // ...
+  }
+
+  /** Reference to the byte within the ns32_t object; 0 for the byte sent/received first, etc.
+   */
   inline u8_t & operator[] (u8_t i) {
-    return u.byte[i & 0x03];
+    return byte[i & 0x03];
   }
+
+  /** Constant reference to the byte within the ns32_t object; 0 for the byte sent/received first, etc.
+   */
   inline const u8_t & operator[] (u8_t i) const {
-    return u.byte[i & 0x03];
+    return byte[i & 0x03];
   }
 
+  /** Reference to the first two-byte sequence within the ns32_t object.
+   */
   inline ns16_t & hi () {
-    return u.sword[0];
+    return *((ns16_t *) byte);
   }
+
+  /** Constant reference to the first two-byte sequence within the ns32_t object.
+   */
   inline const ns16_t & hi () const {
-    return u.sword[0];
+    return *((ns16_t *) byte);
   }
 
+  /** Reference to the second two-byte sequence within the ns32_t object.
+   */ 
   inline ns16_t & lo () {
-    return u.sword[1];
+    return *((ns16_t *) (byte + 2));
   }
+
+  /** Constant reference to the second two-byte sequence within the ns32_t object.
+   */
   inline const ns16_t & lo () const {
-    return u.sword[1];
+    return *((ns16_t *) (byte + 2));
   }
 
+  /** Assignment of a u32_t (unsigned integer) to an ns16_t object.
+   */
   inline ns32_t & operator= (u32_t i) {
-    u.byte[3] =  i & 0xFF;
+    byte[3] = i & 0xFF;
     i >>= 8;
-    u.byte[2] =  i & 0xFF;
+    byte[2] = i & 0xFF;
     i >>= 8;
-    u.byte[1] =  i & 0xFF;
+    byte[1] = i & 0xFF;
     i >>= 8;
-    u.byte[0] =  i;
+    byte[0] = i;
     return *this;
   }
 
+  /** Implicit cast of an ns32_t object to a u32_t (unsigned integer).
+   */
   inline operator u32_t () const {
-    return (((((((u32_t) u.byte[0]) << 8) | ((u32_t) u.byte[1])) << 8) | ((u32_t) u.byte[2])) << 8) | ((u32_t) u.byte[3]);
+    return (((((((u32_t) byte[0]) << 8) | ((u32_t) byte[1])) << 8) | ((u32_t) byte[2])) << 8) | ((u32_t) byte[3]);
   }
 
+  /** Pre-increment operator.
+   */
   inline ns32_t & operator++ () {
-    if (!++u.byte[3])
-      if (!++u.byte[2])
-	if (!++u.byte[1])
-	  ++u.byte[0]; // carry loss
+    if (!++byte[3])
+      if (!++byte[2])
+	if (!++byte[1])
+	  ++byte[0]; // carry loss
 
     return *this;
   }
 
+  /** Addition operator.
+   */
   inline ns32_t & operator+= (const ns32_t & rhs) {
-    u16_t sum = (u16_t) u.byte[3] + (u16_t) rhs.u.byte[3];
-    u.byte[3] = sum & 0xFF;
-    sum = (sum >> 8) + (u16_t) u.byte[2] + (u16_t) rhs.u.byte[2];
-    u.byte[2] = sum & 0xFF;
-    sum = (sum >> 8) + (u16_t) u.byte[1] + (u16_t) rhs.u.byte[1];
-    u.byte[1] = sum & 0xFF;
-    sum = (sum >> 8) + (u16_t) u.byte[0] + (u16_t) rhs.u.byte[0];
-    u.byte[0] = sum & 0xFF; // carry loss
+    u16_t sum = (u16_t) byte[3] + (u16_t) rhs.byte[3];
+    byte[3] = sum & 0xFF;
+    sum = (sum >> 8) + (u16_t) byte[2] + (u16_t) rhs.byte[2];
+    byte[2] = sum & 0xFF;
+    sum = (sum >> 8) + (u16_t) byte[1] + (u16_t) rhs.byte[1];
+    byte[1] = sum & 0xFF;
+    sum = (sum >> 8) + (u16_t) byte[0] + (u16_t) rhs.byte[0];
+    byte[0] = sum & 0xFF; // carry loss
 
     return *this;
   }
 
+  /** Equality comparison of two ns32_t objects.
+   */
   inline bool operator== (const ns32_t & rhs) const {
-    return u.lword == rhs.u.lword;
+    return memcmp (byte, rhs.byte, 4);
   }
 
-  inline bool operator< (const ns32_t & rhs) const {
-    return ((u.byte[0] < rhs.u.byte[0]) || ((u.byte[0] == rhs.u.byte[0]) &&
-					    ((u.byte[1] < rhs.u.byte[1]) || ((u.byte[1] == rhs.u.byte[1]) &&
-									     ((u.byte[2] < rhs.u.byte[2]) || ((u.byte[2] == rhs.u.byte[2]) &&
-													      (u.byte[3] < rhs.u.byte[3])))))));
-  }
-
-  static inline ns32_t convert (u32_t i) {
-    ns32_t c;
-    c = i;
-    return c;
+  /** Equality comparison of an ns32_t object with a u32_t (unsigned integer).
+   */
+  inline bool operator== (const u32_t & rhs) const {
+    u32_t lhs = *this;
+    return (lhs == rhs);
   }
 };
 

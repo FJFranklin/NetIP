@@ -64,7 +64,7 @@ IP_Connection * IP_Manager::connection_for_port (const ns16_t & port) {
 
 u16_t IP_Manager::available_port () {
   while (true) {
-    if (!connection_for_port (ns16_t::convert (last_port))) {
+    if (!connection_for_port (last_port)) {
       break;
     }
     if (last_port == 0xFFFF) {
