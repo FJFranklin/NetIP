@@ -44,31 +44,35 @@
 #endif
 
 #if IP_ARCH_UNIX
-#define IP_DEBUG             1
+#define IP_DEBUG             1 ///< Enable debug feedback - potentially very noisy.
 #include "unix/ip_arch.hh"
 #endif
+
 #if IP_ARCH_ARDUINO
 #define IP_DEBUG             0 ///< Enable debug feedback - potentially very noisy.
 #include "arduino/ip_arch.hh"
 #endif
 
+#define IP_HostID_Default    0x01 ///< One-byte local network ID of the host device
+#define IP_GatewayID_Default 0x01 ///< One-byte local network ID of the gateway device
+
 /* (Comma-separated) Default host & gateway (default router) addresses and netmask, for IPv4 and IPv6.
  * .255 should be broadcast; .0 reserved as a network identifier.
  */
 #if IP_USE_IPv6
-#define IP_Address_DefaultHost    0xfd00,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0501
-#define IP_Address_DefaultGateway 0xfd00,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x05fe
+#define IP_Address_DefaultHost    0xfd00,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,(0x0500|IP_HostID_Default)
+#define IP_Address_DefaultGateway 0xfd00,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,(0x0500|IP_GatewayID_Default)
 #define IP_Address_DefaultNetmask 0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xffff,0xff00
 #else
-#define IP_Address_DefaultHost    192,168,  5,  1 ///< Default host address; for both IPv4 and IPv6, the last byte (1-254) identifies the device on NetIP's local network.
-#define IP_Address_DefaultGateway 192,168,  5,  1 ///< Default gateway address; attempts to connect to external addresses will route to the gateway device.
-#define IP_Address_DefaultNetmask 255,255,255,  0 ///< Network mask.
+#define IP_Address_DefaultHost    192,168,  5,IP_HostID_Default    ///< Default host address; for both IPv4 and IPv6, the last byte (1-254) identifies the device on NetIP's local network.
+#define IP_Address_DefaultGateway 192,168,  5,IP_GatewayID_Default ///< Default gateway address; attempts to connect to external addresses will route to the gateway device.
+#define IP_Address_DefaultNetmask 255,255,255,0                    ///< Network mask.
 #endif
 
 /* Parameters affecting memory use. A high IP_Buffer_Extras increases performance but significantly impacts memory use.
  */
 #define IP_Buffer_WordCount  64   ///< Buffer size in (2-byte) words; one included per channel - affects TCP/IP data size.
-#define IP_Buffer_Extras      4   ///< The number of extra buffers (1 minimum) to include to increase flexibility and responsiveness.
+#define IP_Buffer_Extras      2   ///< The number of extra buffers (1 minimum) to include to increase flexibility and responsiveness.
 #define IP_Connection_FIFO   32   ///< Size of FIFO in bytes; there are two FIFO per connection.
 
 /* Other network parameters.
