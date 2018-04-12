@@ -1,6 +1,8 @@
 NetIP - TCP/IP networking multiple devices over serial
 ======================================================
 
+For project website and documentation, see [here](https://fjfranklin.github.io/NetIP/).
+
 **Overview**
 
 (To follow shortly.)
