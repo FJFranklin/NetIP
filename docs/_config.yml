@@ -1,1 +1,9 @@
+title: NetIP
+description: "TCP/IP networking multiple devices over serial"
+authors: "Francis James Franklin"
+baseurl: "/NetIP" # the subpath of your site, e.g. /blog
+url: "https://fjfranklin.github.io" # the base hostname & protocol for your site
+github_username:  FJFranklin
 theme: jekyll-theme-slate
+exclude:
+  - Doxyfile
