@@ -7,3 +7,4 @@ github_username:  FJFranklin
 theme: jekyll-theme-slate
 exclude:
   - Doxyfile
+  - html/
