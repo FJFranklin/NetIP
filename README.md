@@ -3,7 +3,7 @@ NetIP - TCP/IP networking multiple devices over serial
 
 For project website and documentation, see [here](https://fjfranklin.github.io/NetIP/).
 
-##Overview
+## Overview
 
 The aim of NetIP is to be able to link multiple devices into a network using serial
 connections, so that any device in - or connected to - the network can talk to any
@@ -16,14 +16,14 @@ memory requirements small, with no dynamic allocation of memory that would lead 
 fragmentation. The two 'architectures' currently supported are 'Unix' (tested on
 Linux and Mac OS X) and 'Arduino' (tested on the Uno, Due and Teensy 3.5).
 
-##TODO
+## TODO
 
 * TCP/IP: Connect works; need to implement data & connection-close
 * Add an interface for the gateway device to handle external routing
 * Test with multiple devices
 * Doxygen documentation + GitHub Pages site documentation
 
-#License
+# License
 
 Unless otherwise stated, the code and examples here are
 provided under the MIT License:
