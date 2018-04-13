@@ -1,7 +1,8 @@
 var searchData=
 [
   ['in_5fchain',['in_chain',['../class_link.html#a0416ed99c7664695d8fe5b19313360c5',1,'Link']]],
-  ['ip_5faddress',['IP_Address',['../class_i_p___address.html',1,'']]],
+  ['ip_5faddress',['IP_Address',['../class_i_p___address.html',1,'IP_Address'],['../class_i_p___address.html#a447c578099e66b22ddba7b5a8b8039e6',1,'IP_Address::IP_Address(u8_t addr_0, u8_t addr_1, u8_t addr_2, u8_t addr_3)'],['../class_i_p___address.html#a2009c72f0d6822c7fc181373951bda3d',1,'IP_Address::IP_Address()']]],
+  ['ip_5faddress_2ehh',['ip_address.hh',['../ip__address_8hh.html',1,'']]],
   ['ip_5faddress_5fdefaultgateway',['IP_Address_DefaultGateway',['../ip__config_8hh.html#a92e1439510187bdf8205969ef39743d0',1,'ip_config.hh']]],
   ['ip_5faddress_5fdefaulthost',['IP_Address_DefaultHost',['../ip__config_8hh.html#ae16046bd236c11be7f189caa92610eda',1,'ip_config.hh']]],
   ['ip_5faddress_5fdefaultnetmask',['IP_Address_DefaultNetmask',['../ip__config_8hh.html#abc88e49af4b24a34a74295440b82399c',1,'ip_config.hh']]],

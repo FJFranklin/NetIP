@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.14"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>NetIP: Member List</title>
+<title>NetIP: netip/ip_address.hh File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -61,25 +61,35 @@ $(function() {
 </iframe>
 </div>
 
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_679572e49285404eb9fc578fc468a71c.html">netip</a></li>  </ul>
+</div>
 </div><!-- top -->
 <div class="header">
+  <div class="summary">
+<a href="#nested-classes">Classes</a>  </div>
   <div class="headertitle">
-<div class="title">Chain&lt; T &gt; Member List</div>  </div>
+<div class="title">ip_address.hh File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p>This is the complete list of members for <a class="el" href="class_chain.html">Chain&lt; T &gt;</a>, including all inherited members.</p>
-<table class="directory">
-  <tr class="even"><td class="entry"><a class="el" href="class_chain.html#a81255c185ee529382080e6b460c822d5">begin</a>()</td><td class="entry"><a class="el" href="class_chain.html">Chain&lt; T &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr><td class="entry"><a class="el" href="class_chain.html#ab0d6e2d4d4a5b89a46a4d4ab08c9019a">Chain</a>()</td><td class="entry"><a class="el" href="class_chain.html">Chain&lt; T &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="class_chain.html#a8e883de25b16e444b611ed680c93272e">chain_append</a>(T *link)</td><td class="entry"><a class="el" href="class_chain.html">Chain&lt; T &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr><td class="entry"><a class="el" href="class_chain.html#a985213a1f968e4551fc9f9404fe2c849">chain_first</a>(bool bRemove=false)</td><td class="entry"><a class="el" href="class_chain.html">Chain&lt; T &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="class_chain.html#a36eea3c2b29baf4dbaca93ce93fd766b">chain_pop</a>()</td><td class="entry"><a class="el" href="class_chain.html">Chain&lt; T &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr><td class="entry"><a class="el" href="class_chain.html#a0f5adca21633fd328e23643f5cac931e">chain_prepend</a>(T *link)</td><td class="entry"><a class="el" href="class_chain.html">Chain&lt; T &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="class_chain.html#a8b26dc5a408e276af1cad52e6b633731">chain_push</a>(T *link, bool bFIFO=false)</td><td class="entry"><a class="el" href="class_chain.html">Chain&lt; T &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr><td class="entry"><a class="el" href="class_chain.html#a9368fffe1855acded3a522cc8cf2341d">chain_remove</a>(Link *link)</td><td class="entry"><a class="el" href="class_chain.html">Chain&lt; T &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>~Chain</b>() (defined in <a class="el" href="class_chain.html">Chain&lt; T &gt;</a>)</td><td class="entry"><a class="el" href="class_chain.html">Chain&lt; T &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-</table></div><!-- contents -->
+<p>A class representing an internet address.  
+<a href="#details">More...</a></p>
+<div class="textblock"><code>#include &quot;ip_defines.hh&quot;</code><br />
+<code>#include &quot;<a class="el" href="ip__types_8hh_source.html">ip_types.hh</a>&quot;</code><br />
+</div>
+<p><a href="ip__address_8hh_source.html">Go to the source code of this file.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_i_p___address.html">IP_Address</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A class representing an internet address. </p>
+<p>IPv6 addresses are 16 bytes compared to 4 bytes for an IPv4 address. IPv6 protocol headers are 40 bytes vs 20 bytes for IPv4. Support for IPv6 has a significant impact on memory requirements, which is critical for devices such as the Arduino Uno. For this reason, there is support for either IPv4 or IPv6, but not really both. The <a class="el" href="class_i_p___address.html">IP_Address</a> class is defined for one or other, but not both. Perhaps this could/should be rewritten as two distinct classes. </p>
+</div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
