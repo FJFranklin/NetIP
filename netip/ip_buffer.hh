@@ -21,16 +21,27 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*! \file ip_buffer.hh
+    \brief The actual packet buffer, along with utility methods for analysing or creating the protocol and IP headers.
+    
+    The packet buffer must be associated with an originating channel; if it's being generated, then the channel number is zero.
+    Either IPv4 or IPv6 is supported, but not both simultaneously.
+*/
+
 #ifndef __ip_buffer_hh__
 #define __ip_buffer_hh__
 
 #include "ip_protocol.hh"
 
+/** The IP_Buffer contains the actual byte buffer for packets, as well as a range of utility methods for examining
+ * and/or generating the protocols and and data. The packet buffer must be associated with an originating channel;
+ * if it's being generated, then the channel number is zero. Either IPv4 or IPv6 is supported, but not both simultaneously.
+ */
 class IP_Buffer : public Buffer, public Link {
 private:
-  u8_t buffer[IP_Buffer_WordCount << 1];
-
-  u8_t source_channel;
+  u8_t buffer[IP_Buffer_WordCount << 1]; ///< The main packet buffer, containing IP and UDP/TCP/ICMP headers, as well as any data.
+  u8_t source_channel;                   ///< Number (1-15) indicating the source (i.e., which IP_Channel) of the packet; or 0 for self.
+  u8_t ref_count;                        ///< A reference counter.
 
 public:
   inline void channel (u8_t channel_number) {
@@ -41,9 +52,28 @@ public:
     return source_channel;
   }
 
+  /** Increment the reference counter.
+   */
+  inline void ref () {
+    ++ref_count;
+  }
+
+  /** Decrement the reference counter.
+   */
+  inline u8_t unref () {
+    return --ref_count;
+  }
+
+  /** Returns true if the reference counter is non-zero.
+   */
+  inline bool retained () const {
+    return (ref_count > 0);
+  }
+
   IP_Buffer () :
     Buffer(buffer, IP_Buffer_WordCount << 1),
-    source_channel(0)
+    source_channel(0),
+    ref_count(0)
   {
     // ...
   }
@@ -117,7 +147,7 @@ public:
     return *((const struct IP_Header_ICMP *) (buffer + protocol_offset ()));
   }
 
-  void defaults (IP_Protocol p) {
+  inline void defaults (IP_Protocol p) {
     ip().defaults ();
     ip().protocol() = (u8_t) p;
 

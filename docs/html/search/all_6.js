@@ -8,6 +8,7 @@ var searchData=
   ['ip_5farch_5farduino',['IP_ARCH_ARDUINO',['../ip__config_8hh.html#a636ea0975fa379f5c378c08f26b58b42',1,'ip_config.hh']]],
   ['ip_5farch_5funix',['IP_ARCH_UNIX',['../ip__config_8hh.html#a95dc9e4e748eb6a87b8851a8aee05a37',1,'ip_config.hh']]],
   ['ip_5fbuffer',['IP_Buffer',['../class_i_p___buffer.html',1,'']]],
+  ['ip_5fbuffer_2ehh',['ip_buffer.hh',['../ip__buffer_8hh.html',1,'']]],
   ['ip_5fbuffer_5fextras',['IP_Buffer_Extras',['../ip__config_8hh.html#ab10fd8663b501a90c7a4e7449732ecef',1,'ip_config.hh']]],
   ['ip_5fbuffer_5fwordcount',['IP_Buffer_WordCount',['../ip__config_8hh.html#a75b55d8987a20007f3af970336168863',1,'ip_config.hh']]],
   ['ip_5fchannel',['IP_Channel',['../class_i_p___channel.html',1,'']]],

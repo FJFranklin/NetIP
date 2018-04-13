@@ -117,7 +117,6 @@ public:
   inline void add_to_spares (IP_Buffer * buffer) {
     if (buffer) {
       if (!buffer->retained ()) {
-	// fprintf (stderr, ">> %p\n", buffer);
 	chain_buffers_spare.chain_prepend (buffer);
       }
     }
@@ -128,7 +127,6 @@ public:
    */
   inline IP_Buffer * get_from_spares () {
     IP_Buffer * B = chain_buffers_spare.chain_pop ();
-    // fprintf (stderr, "<< %p\n", B);
     return B;
   }
 

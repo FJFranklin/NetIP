@@ -540,7 +540,7 @@ public:
   u16_t write (const u8_t * ptr, u16_t length);
 };
 
-/** A basic byte buffer class with a simple reference counter, various indexing methods
+/** A basic byte buffer class with various indexing methods
  *  and read/write methods, and support for checksums.
  */
 class Buffer {
@@ -552,8 +552,6 @@ private:
   u16_t  buffer_max;       ///< Specified length (capacity) of the byte buffer.
 protected:
   u16_t  buffer_used;      ///< Number of bytes used in the buffer so far.
-private:
-  u8_t   ref_count;        ///< A reference counter.
 
 public:
   /** Returns a constant pointer to the byte buffer.
@@ -633,24 +631,6 @@ public:
     buffer_used = 0;
   }
 
-  /** Increment the reference counter.
-   */
-  inline void ref () {
-    ++ref_count;
-  }
-
-  /** Decrement the reference counter.
-   */
-  inline u8_t unref () {
-    return --ref_count;
-  }
-
-  /** Returns true if the reference counter is non-zero.
-   */
-  inline bool retained () const {
-    return (ref_count > 0);
-  }
-
   /** The actual buffer exists elsewhere; Buffer merely manages it. The initial reference count is zero.
    * \param byte_buffer Pointer to the external buffer.
    * \param capacity    The size (number of bytes) of the external buffer.
@@ -659,8 +639,7 @@ public:
   Buffer (u8_t * byte_buffer, u16_t capacity, bool bFull = false) :
     buffer(byte_buffer),
     buffer_max(capacity),
-    buffer_used(bFull ? capacity : 0),
-    ref_count(0)
+    buffer_used(bFull ? capacity : 0)
   {
     // ...
   }
