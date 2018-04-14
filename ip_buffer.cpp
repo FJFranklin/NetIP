@@ -278,6 +278,10 @@ void IP_Buffer::icmp_finalise () {
   icmp().checksum() = check.checksum ();
 }
 
+/** Generate an Echo Request ping packet. The Echo Request ID is fixed as 0x73, and the payload is the current time in milliseconds.
+ * \param address The address of the target device (or a broadcast address).
+ * \param seq_no  The sequence number to use for the Echo Request.
+ */
 void IP_Buffer::ping (const IP_Address & address, u16_t seq_no) {
   defaults (p_ICMP);
 
@@ -305,6 +309,10 @@ void IP_Buffer::ping_to_pong () { // we do this in-place, i.e., convert in incom
   icmp_finalise ();
 }
 
+/** Calculate the round-trip time for a received Echo Reply.
+ * \param round_trip Returns the difference between the current time in milliseconds and that recorded in the payload from the original Echo Request.
+ * \param seq_no     Returns the seq_no from the Echo Request/Reply.
+ */
 void IP_Buffer::pong (u32_t & round_trip, u16_t & seq_no) const {
   u32_t time = IP_Manager::manager().milliseconds ();
 

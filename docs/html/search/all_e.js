@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['tick',['tick',['../class_i_p___clock.html#a384e2e3b46ad42228d167a3b7f6ec40d',1,'IP_Clock']]],
-  ['timeout',['timeout',['../class_i_p___connection.html#aa46f870ea0a032a1ec6426abfe8d120e',1,'IP_Connection::timeout()'],['../class_i_p___timer_client.html#a62c5e53552423dd567382027b442b669',1,'IP_TimerClient::timeout()']]],
-  ['timer_5fadd',['timer_add',['../class_i_p___clock.html#acf88e871edd1eedb1c63d6a9a62e3003',1,'IP_Clock']]]
+  ['set',['set',['../class_i_p___address.html#ad1aa6da84ad62915967ec737e42de1f0',1,'IP_Address']]],
+  ['set_5flocal_5fnetwork_5fid',['set_local_network_id',['../class_i_p___address.html#ae5d1b254874f20fe307c9f7aa86610ef',1,'IP_Address']]],
+  ['sniff',['sniff',['../class_i_p___buffer.html#af57f03aba0809b96c932feef6c3dd3bb',1,'IP_Buffer']]],
+  ['start',['start',['../class_i_p___timer.html#ab00be3119277724187872b352034401a',1,'IP_Timer']]],
+  ['stop',['stop',['../class_i_p___clock.html#a1c09cd7da2615b326824da60330bc0e6',1,'IP_Clock']]]
 ];

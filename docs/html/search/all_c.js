@@ -1,8 +1,10 @@
 var searchData=
 [
-  ['read',['read',['../class_f_i_f_o.html#a87af5aa9fedd05c8ca5a88a05845b3ab',1,'FIFO::read()'],['../class_buffer.html#a7ec02c9792edea3b89bec6bfbea86899',1,'Buffer::read()']]],
-  ['ref',['ref',['../class_i_p___buffer.html#a98a9245e69433686e02fbd65aeaa002b',1,'IP_Buffer']]],
-  ['remove_5ffrom_5fchain',['remove_from_chain',['../class_link.html#a2b6ae598ac0077bdf6f877115898e5f9',1,'Link']]],
-  ['retained',['retained',['../class_i_p___buffer.html#aa6181898cf7fbbabb1e6ab3406195ef6',1,'IP_Buffer']]],
-  ['run',['run',['../class_i_p___clock.html#a58a64ea293d7d2886b3e6dda3c2a5d04',1,'IP_Clock']]]
+  ['ping',['ping',['../class_i_p___buffer.html#a885e11b76577f514939edb14dc395bf6',1,'IP_Buffer']]],
+  ['ping_5fto_5fpong',['ping_to_pong',['../class_i_p___buffer.html#a55bb21765d424ad57eebb001296be947',1,'IP_Buffer']]],
+  ['pong',['pong',['../class_i_p___buffer.html#ab16889ca39ec3552d5c9b1f9d8f8bedf',1,'IP_Buffer']]],
+  ['pop',['pop',['../class_f_i_f_o.html#a484f596a0c0f95e7e3a54103b28c109f',1,'FIFO']]],
+  ['print',['print',['../class_i_p___buffer.html#a684c0849a46f25751e6adb121b6d8586',1,'IP_Buffer']]],
+  ['pull',['pull',['../class_buffer.html#ada99774cee97849ddea6a0f45f3c7bda',1,'Buffer']]],
+  ['push',['push',['../class_f_i_f_o.html#ae4755f26c6556560f2e8bca03136edf8',1,'FIFO::push()'],['../class_buffer.html#a5c881e57d7298a5404eff37e0aa87eba',1,'Buffer::push()']]]
 ];
