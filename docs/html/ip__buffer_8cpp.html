@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.14"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>NetIP: NetIP - TCP/IP networking multiple devices over serial</title>
+<title>NetIP: ip_buffer.cpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -64,27 +64,16 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="headertitle">
-<div class="title">NetIP - TCP/IP networking multiple devices over serial </div>  </div>
+<div class="title">ip_buffer.cpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>For project website and documentation, see <a href="https://fjfranklin.github.io/NetIP/">here</a>.</p>
-<h2>Overview</h2>
-<p>The aim of NetIP is to be able to link multiple devices into a network using serial connections, so that any device in - or connected to - the network can talk to any other. This is achieved using Serial Line Internet Protocol (SLIP) between devices, and forwarding packets transparently at intermediate nodes. UDP is supported, and also a subset of TCP/IP. (There is no support for fragmentation and reassembly.)</p>
-<p>The principal target of NetIP is embedded devices, so the program code is small and memory requirements small, with no dynamic allocation of memory that would lead to fragmentation. The two 'architectures' currently supported are 'Unix' (tested on Linux and Mac OS X) and 'Arduino' (tested on the Uno, Due and Teensy 3.5).</p>
-<h2>TODO</h2>
-<ul>
-<li>TCP/IP: Connect works; need to implement data &amp; connection-close</li>
-<li>Add an interface for the gateway device to handle external routing</li>
-<li>Test with multiple devices</li>
-<li>Doxygen documentation + GitHub Pages site documentation</li>
-<li>Q. What happens when a serial link blocks?</li>
-</ul>
-<h1>License</h1>
-<p>Unless otherwise stated, the code and examples here are provided under the MIT License:</p>
-<p>Copyright (c) 2018 Francis James Franklin</p>
-<p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
-<p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
-<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. </p>
+
+<p>Methods for examining and generating IP packets.  
+<a href="#details">More...</a></p>
+<div class="textblock"><code>#include &quot;netip/ip_manager.hh&quot;</code><br />
+</div><a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Methods for examining and generating IP packets. </p>
+<p>This source file contains various methods for constructing and/or finalising IP packets with various protocols, setting lengths and calculating checksums. </p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
