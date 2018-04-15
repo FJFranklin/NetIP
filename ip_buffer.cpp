@@ -21,8 +21,18 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*! \file ip_buffer.cpp
+    \brief Methods for examining and generating IP packets.
+    
+    This source file contains various methods for constructing and/or finalising IP packets with various
+    protocols, setting lengths and calculating checksums.
+*/
+
 #include "netip/ip_manager.hh"
 
+/** Used to determine the validity of incoming packets.
+ * \return hs_Okay if the packet is valid UDP/IP or TCP/IP; hs_EchoRequest or hs_EchoReply for ICMP; all other return values indicate the packet is invalid.
+ */
 IP_Buffer::HeaderSniff IP_Buffer::sniff () const {
   /* quick version check before we proceed
    */

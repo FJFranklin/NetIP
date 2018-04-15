@@ -22,6 +22,7 @@ Linux and Mac OS X) and 'Arduino' (tested on the Uno, Due and Teensy 3.5).
 * Add an interface for the gateway device to handle external routing
 * Test with multiple devices
 * Doxygen documentation + GitHub Pages site documentation
+* Q. What happens when a serial link blocks?
 
 # License
 
