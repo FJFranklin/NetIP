@@ -94,7 +94,7 @@ public:
   /** Equality comparison of two ns16_t objects.
    */
   inline bool operator== (const ns16_t & rhs) const {
-    return memcmp (byte, rhs.byte, 2);
+    return memcmp (byte, rhs.byte, 2) == 0;
   }
 
   /** Equality comparison of an ns16_t object with a u16_t (unsigned short integer).
@@ -107,7 +107,7 @@ public:
   /** Inequality comparison of two ns16_t objects.
    */
   inline bool operator!= (const ns16_t & rhs) const {
-    return !memcmp (byte, rhs.byte, 2);
+    return memcmp (byte, rhs.byte, 2);
   }
 
   /** Inequality comparison of an ns16_t object with a u16_t (unsigned short integer).
@@ -231,7 +231,7 @@ public:
   /** Equality comparison of two ns32_t objects.
    */
   inline bool operator== (const ns32_t & rhs) const {
-    return memcmp (byte, rhs.byte, 4);
+    return memcmp (byte, rhs.byte, 4) == 0;
   }
 
   /** Equality comparison of an ns32_t object with a u32_t (unsigned integer).
