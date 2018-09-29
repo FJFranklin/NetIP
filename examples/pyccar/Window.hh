@@ -1,3 +1,4 @@
+
 /* Copyright (c) 2018 Francis James Franklin
  * 
  * All rights reserved.
@@ -304,6 +305,39 @@ namespace PyCCar {
       return m_menu_Exit.find_id (id);
     }
   };
+
+  class Keyboard : public Window, public Button::Handler {
+  public:
+    class Handler {
+    public:
+      virtual bool notify_keyboard_will_open () = 0;               // return false to cancel menu
+      virtual bool notify_keyboard_closed (const char * text) = 0; // return false to stop timer; text is 0 on cancel
+
+      virtual ~Handler () { }
+    };
+  private:
+    Window * m_keytext;
+    Button * m_key[4][12];
+
+    char     m_text[PyCCar_Keyboard_TextMax+1];
+    unsigned m_count;
+
+    Handler * m_handler;
+
+  public:
+    Keyboard ();
+
+    virtual ~Keyboard ();
+
+    void clear ();
+
+    void switch_to_keyboard (Handler & handler);
+
+    virtual bool button_press (unsigned button_id);
+  private:
+    void set_keyboard (const char (&keys)[4][12]);
+  };
+
 } // namespace PyCCar
 
 #endif /* ! __Window_hh__ */

@@ -737,3 +737,210 @@ bool MenuManager::button_press (unsigned menu_id) {
 
   return response;
 }
+
+#define KEY_Null     0
+#define KEY_Cancel   1
+#define KEY_Okay     2
+#define KEY_AlNum    3
+#define KEY_Caps     4
+#define KEY_Lower    5
+#define KEY_Specs    8
+#define KEY_Extra    9
+#define KEY_Space   32
+#define KEY_Del    127
+
+static const char keys_lower[4][12] = {
+  { KEY_Cancel,     '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',      KEY_Del  },
+  { KEY_Specs,      'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',      KEY_Null },
+  { KEY_Caps,       'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', KEY_Null, KEY_Null },
+  { KEY_Null, KEY_Space, 'z', 'x', 'c', 'v', 'b', 'n', 'm', '.', KEY_Null, KEY_Okay }
+};
+static const char keys_upper[4][12] = {
+  { KEY_Cancel,     '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',      KEY_Del  },
+  { KEY_Specs,      'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',      KEY_Null },
+  { KEY_Lower,      'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', KEY_Null, KEY_Null },
+  { KEY_Null, KEY_Space, 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '.', KEY_Null, KEY_Okay }
+};
+static const char keys_specs[4][12] = {
+  { KEY_Cancel,     '1', '2', '3',  '4',  '5', '6', '7', '8', '9', '0',      KEY_Del  },
+  { KEY_Extra,      '!', '@', '#',  '$', '\\', '|', '/',  '*', '(', ')',     KEY_Null },
+  { KEY_AlNum,      '%', '?', '&',  '^',  '<', '>', '+', '-', '=', '_',      KEY_Null },
+  { KEY_Null, KEY_Space, '~', '`', '\'',  '"', ';', ':', ',', '.', KEY_Null, KEY_Okay }
+};
+static const char keys_extra[4][12] = {
+  { KEY_Cancel,     '1', '2', '3',  '4',  '5', '6', '7', '8', '9', '0',      KEY_Del  },
+  { KEY_Specs,      '{', '}', '#',  '$', '\\', '|', '/', '*', '(', ')',      KEY_Null },
+  { KEY_AlNum,      '[', ']', '&',  '^',  '<', '>', '+', '-', '=', '_',      KEY_Null },
+  { KEY_Null, KEY_Space, '~', '`', '\'',  '"', ';', ':', ',', '.', KEY_Null, KEY_Okay }
+};
+
+Keyboard::Keyboard () :
+  Window(Window::root (), 0, 0, Window::root().window_width (), Window::root().window_height ()),
+  m_keytext(0),
+  m_count(0),
+  m_handler(0)
+{
+  for (int r = 0; r < 4; r++)
+    for (int c = 0; c < 12; c++)
+      m_key[r][c] = 0;
+
+  m_text[0] = 0;
+
+  unsigned key_w = (window_width ()  - 20) / 12;
+  unsigned key_h = (window_height () - 20) / 5;
+
+  unsigned key_size = (key_w < key_h) ? key_w : key_h;
+  unsigned key_font_size = key_h - 30;
+
+  unsigned keytext_h = (window_height () - 20) - 4 * key_h;
+  unsigned keytext_font_size = keytext_h - 20;
+
+  m_keytext = new Window(*this, 10, 10, window_width () - 20, keytext_h);
+  m_keytext->ui().set_type ("KeyText");
+  m_keytext->ui().set_font_size (keytext_font_size);
+  m_keytext->ui().set_label (m_text);
+  m_keytext->set_visible (true);
+
+  for (int r = 0; r < 4; r++) {
+    unsigned row_offset = 10 + keytext_h + r * key_h;
+
+    for (int c = 0; c < 12; c++) {
+      unsigned col_offset = 10 + c * key_w;
+
+      m_key[r][c] = new Button(*this, col_offset, row_offset, key_size, key_size);
+      m_key[r][c]->ui().set_type ("Key");
+      m_key[r][c]->ui().set_font_size (key_font_size);
+    }
+  }
+  set_keyboard (keys_lower);
+}
+
+Keyboard::~Keyboard () {
+  if (m_keytext) {
+    delete m_keytext;
+  }
+  for (int r = 0; r < 4; r++)
+    for (int c = 0; c < 12; c++) {
+      if (m_key[r][c]) {
+	delete m_key[r][c];
+      }
+    }
+}
+
+bool Keyboard::button_press (unsigned button_id) {
+  bool response = true;
+
+  switch (button_id) {
+  case KEY_Cancel:
+    {
+      set_visible (false);
+
+      if (m_handler) { // should be true
+	response = m_handler->notify_keyboard_closed (0);
+	m_handler = 0;
+      }
+      break;
+    }
+  case KEY_Okay:
+    {
+      set_visible (false);
+
+      if (m_handler) { // should be true
+	response = m_handler->notify_keyboard_closed (m_text);
+	m_handler = 0;
+      }
+      break;
+    }
+  case KEY_Null:
+    {
+      // (unexpected)
+      break;
+    }
+  case KEY_Caps:
+    {
+      set_keyboard (keys_upper);
+      break;
+    }
+  case KEY_AlNum:
+  case KEY_Lower:
+    {
+      set_keyboard (keys_lower);
+      break;
+    }
+  case KEY_Specs:
+    {
+      set_keyboard (keys_specs);
+      break;
+    }
+  case KEY_Extra:
+    {
+      set_keyboard (keys_extra);
+      break;
+    }
+  case KEY_Del:
+    {
+      if (m_count > 0) {
+	m_text[--m_count] = 0;
+
+	m_keytext->ui().set_label (m_text);
+	m_keytext->set_dirty (true);
+      }
+      break;
+    }
+  case KEY_Space: // (character input)
+  default:
+    {
+      if (m_count < PyCCar_Keyboard_TextMax) {
+	m_text[m_count++] = static_cast<char>(button_id);
+	m_text[m_count] = 0;
+
+	m_keytext->ui().set_label (m_text);
+	m_keytext->set_dirty (true);
+      }
+      break;
+    }
+  }
+  return response;
+}
+
+void Keyboard::set_keyboard (const char (&keys)[4][12]) {
+  for (int r = 0; r < 4; r++) {
+    for (int c = 0; c < 12; c++) {
+      // fprintf (stderr, "{ %X }", keys[r][c]);
+      if (keys[r][c] == KEY_Null) {
+	m_key[r][c]->set_enabled (false);
+	m_key[r][c]->set_visible (false);
+      } else {
+	m_key[r][c]->set_visible (true);
+	m_key[r][c]->set_enabled (true);
+	m_key[r][c]->set_handler (this, keys[r][c]);
+
+	char label[2];
+	label [0] = keys[r][c];
+	label [1] = 0;
+	m_key[r][c]->ui().set_label (label);
+      }
+      m_key[r][c]->set_dirty (true);
+    }
+    // fputs ("\n", stderr);
+  }
+}
+
+void Keyboard::clear () {
+  if (m_count) {
+    m_count = 0;
+    m_text[0] = 0;
+    m_keytext->ui().set_label (m_text);
+    m_keytext->set_dirty (true);
+  }
+}
+
+void Keyboard::switch_to_keyboard (Handler & handler) { // returns 0 on Cancel
+  if (!m_handler) {
+    if (handler.notify_keyboard_will_open ()) {
+      m_handler = &handler;
+      clear ();
+      set_visible (true); // TODO: add a raise-to-top
+    }
+  }
+}

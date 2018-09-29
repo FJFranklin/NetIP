@@ -137,9 +137,11 @@ public:
   }
 };
 
-class PyCCarMenu : public MenuManager::Handler, public TouchInput::RunTimer {
+class PyCCarMenu : public MenuManager::Handler, public TouchInput::RunTimer, public Keyboard::Handler {
 public:
   MenuManager MM;
+
+  Keyboard m_Keyboard;
 
   Canvas * m_Canvas;
 
@@ -170,6 +172,26 @@ public:
 
   virtual bool run_timer_interval () { // return false to stop timer
     Window::root().redraw ();
+    return true;
+  }
+
+  virtual bool notify_keyboard_will_open () { // return false to cancel menu
+    if (m_Canvas) {
+      m_Canvas->set_visible (false);
+    }
+    return true;
+  }
+
+  virtual bool notify_keyboard_closed (const char * text) { // return false to stop timer; text is 0 on cancel
+    if (text) {
+      fprintf (stderr, "Keyboard input: \"%s\"\n", text);
+    } else {
+      fputs ("Keyboard cancelled!\n", stderr);
+    }
+
+    if (m_Canvas) {
+      m_Canvas->set_visible (true);
+    }
     return true;
   }
 
@@ -209,7 +231,7 @@ public:
       }
     case MENU_ID_Item0:
       {
-	// ...
+	m_Keyboard.switch_to_keyboard (*this);
 	break;
       }
     case MENU_ID_Item1:

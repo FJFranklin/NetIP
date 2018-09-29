@@ -21,7 +21,7 @@ defprop['a-thick'] = 9        # border thickness, if active
 #defprop['bbox']   = (0,0,800,480)  # bounding box
 defprop['dis_FG']  = grey     # foreground color if disabled
 defprop['flags']   = 0
-defprop['inset']   = 10       # border-inset, if any
+#defprop['inset']   = 10       # border-inset, if any
 defprop['line']    = 5        # general line thickness
 defprop['n-thin']  = 3        # border thickness, if not
 defprop['size']    = 24       # font size
@@ -229,6 +229,44 @@ def draw_canvas_tracker_point(bbox, location, BG, FG):
     pygame.draw.rect(screen, FG, (sx, sy, sw, sh), 0)
     pygame.draw.rect(screen, BG, (sx+thickness, sy+thickness, sw-2*thickness, sh-2*thickness), 0)
 
+def draw_key(win_id, bbox, flags):
+    d    = get_property(win_id, 'inset')
+    FG   = get_property(win_id, 'FG')
+    text = get_property(win_id, 'Label')
+    size = get_property(win_id, 'size')
+    code = ord(text[0])
+    if code == 1: # Cancel
+        None
+    elif code == 2: # Okay
+        None
+    elif code == 3: # AlNum
+        None
+    elif code == 4: # Caps
+        None
+    elif code == 5: # Lower
+        None
+    elif code == 8: # Specs
+        None
+    elif code == 9: # Extra
+        None
+    elif code == 127: # Del
+        None
+    elif code > 31 and code < 127:
+        font = get_font(size)
+        label = font.render(str(text), 1, (FG))
+        (x, y, w, h) = bbox
+        screen.blit(label, (x+2*d,y+d))
+
+def draw_keytext(win_id, bbox, flags):
+    d    = get_property(win_id, 'inset')
+    FG   = get_property(win_id, 'FG')
+    text = get_property(win_id, 'Label')
+    size = get_property(win_id, 'size')
+    font = get_font(size)
+    label = font.render(str(text), 1, (FG))
+    (x, y, w, h) = bbox
+    screen.blit(label, (x+d,y+2*d))
+
 def draw_canvas_tracker(win_id, bbox, flags):
     count = get_property(win_id, 'CT#')
     loc_1 = None
@@ -269,6 +307,10 @@ def ui_draw(win_id):
             draw_scroll(win_id, bbox, flags)
         elif type == 'Menu Item':
             draw_menu_item(win_id, bbox, flags)
+        elif type == 'Key':
+            draw_key(win_id, bbox, flags)
+        elif type == 'KeyText':
+            draw_keytext(win_id, bbox, flags)
         elif type == 'Canvas:Tracker':
             draw_canvas_tracker(win_id, bbox, flags)
 
@@ -290,6 +332,8 @@ def ui_init(DD, screen_wh):
     else:
         screen = pygame.display.set_mode(screen_wh)
     screen.fill(red)
+    (w, h) = screen_wh
+    defprop['inset'] = int(round(h / 48))
     pygame.display.update()
 
 def ui_event():

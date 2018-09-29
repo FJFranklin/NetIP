@@ -37,6 +37,10 @@
 #define PyCCar_SUBMENU 0x10u // whether the window/button has a submenu
 #define PyCCar_BLANK   0x20u // whether the window/button is blank (if visible, but regardless of type)
 
+/* keyboard character count
+ */
+#define PyCCar_Keyboard_TextMax 24
+
 class PyCCarUI {
 public:
   enum EventType {
