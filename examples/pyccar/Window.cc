@@ -812,6 +812,12 @@ Keyboard::Keyboard () :
       m_key[r][c]->ui().set_font_size (key_font_size);
     }
   }
+  m_key[0][ 0]->ui().set_fg_color (255, 0, 0);
+  m_key[0][11]->ui().set_fg_color (0, 0, 255);
+  m_key[1][ 0]->ui().set_fg_color (0, 0, 255);
+  m_key[2][ 0]->ui().set_fg_color (0, 0, 255);
+  m_key[3][11]->ui().set_fg_color (0, 255, 0);
+
   set_keyboard (keys_lower);
 }
 

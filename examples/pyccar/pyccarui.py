@@ -230,32 +230,55 @@ def draw_canvas_tracker_point(bbox, location, BG, FG):
     pygame.draw.rect(screen, BG, (sx+thickness, sy+thickness, sw-2*thickness, sh-2*thickness), 0)
 
 def draw_key(win_id, bbox, flags):
-    d    = get_property(win_id, 'inset')
-    FG   = get_property(win_id, 'FG')
-    text = get_property(win_id, 'Label')
-    size = get_property(win_id, 'size')
+    thickness = get_property(win_id, 'line')
+    d         = get_property(win_id, 'inset')
+    FG        = get_property(win_id, 'FG')
+    text      = get_property(win_id, 'Label')
+    size      = get_property(win_id, 'size')
+    (x, y, w, h) = bbox
+    xi = x + d
+    yi = y + d
+    wi = w - 2 * d
+    hi = w - 2 * d
+    ht = int(round(thickness/2))
+    hw = int(round(w/2))
+    hh = int(round(h/2))
     code = ord(text[0])
     if code == 1: # Cancel
-        None
+        pygame.draw.line(screen, FG, (xi+ht, yi+ht), (xi+wi-ht, yi+hi-ht), thickness)
+        pygame.draw.line(screen, FG, (xi+ht, yi+hi-ht), (xi+wi-ht, yi+ht), thickness)
     elif code == 2: # Okay
-        None
+        pygame.draw.line(screen, FG, (xi+ht, y+hh), (x+hw, yi+hi-ht), thickness)
+        pygame.draw.line(screen, FG, (x+hw, yi+hi-ht), (xi+wi-ht, yi+ht), thickness)
     elif code == 3: # AlNum
-        None
+        font = get_font(size)
+        label = font.render(str('T'), 1, (FG))
+        screen.blit(label, (xi+ht,yi))
+        #screen.blit(label, (x+int(round(1.5*d)),y+d))
     elif code == 4: # Caps
-        None
+        pygame.draw.polygon(screen, FG, [(x+hw,yi+ht), (xi+ht,y+hh), (xi+wi-ht,y+hh)], 0)
+        pygame.draw.rect(screen, FG, (x+hw-thickness, y+hh-d, 2*thickness, hh-ht), 0)
     elif code == 5: # Lower
-        None
+        pygame.draw.polygon(screen, FG, [(x+hw,yi+hi-ht), (xi+ht,y+hh), (xi+wi-ht,y+hh)], 0)
+        pygame.draw.rect(screen, FG, (x+hw-thickness, yi+ht, 2*thickness, hh), 0)
     elif code == 8: # Specs
-        None
+        font = get_font(size)
+        label = font.render(str('!,`'), 1, (FG))
+        screen.blit(label, (xi+ht,yi))
+        #screen.blit(label, (x+int(round(1.5*d)),y+d))
     elif code == 9: # Extra
-        None
+        font = get_font(size)
+        label = font.render(str('{}'), 1, (FG))
+        screen.blit(label, (xi+ht,yi))
+        #screen.blit(label, (x+int(round(1.5*d)),y+d))
     elif code == 127: # Del
-        None
+        pygame.draw.polygon(screen, FG, [(xi+ht,y+hh), (x+hw,yi+ht), (x+hw,yi+hi-ht)], 0)
+        pygame.draw.rect(screen, FG, (x+hw-d, y+hh-thickness, hw-ht, 2*thickness), 0)
     elif code > 31 and code < 127:
         font = get_font(size)
         label = font.render(str(text), 1, (FG))
-        (x, y, w, h) = bbox
-        screen.blit(label, (x+2*d,y+d))
+        screen.blit(label, (xi+ht,yi))
+        #screen.blit(label, (x+int(round(1.5*d)),y+d))
 
 def draw_keytext(win_id, bbox, flags):
     d    = get_property(win_id, 'inset')
